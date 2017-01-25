@@ -1,0 +1,4 @@
+*.pyc
+/temp/*
+/scratch/*
+/output.png
