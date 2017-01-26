@@ -57,20 +57,28 @@ def apply_rules(candidates, rejects, subdirectory, rules):
 
 def parse_options():
     global GENERATE_MASK_TILES, VISUALIZE_SORT, REJECT_TILES, REMOVE_LAND, REMOVE_CLOUDS
+    global SCENE, LAND_MASK, CLOUD_MASK, SNOW_MASK, INPUT_FILE
     for arg in argv:
         if(arg=="--generate-mask"):
             GENERATE_MASK_TILES = True
-        if(arg=="--visualize"):
+        elif(arg=="--visualize"):
             VISUALIZE_SORT = True
-        if(arg=="--reject"):
+        elif(arg=="--reject"):
             REJECT_TILES = True
-        if(arg=="--clean"):
+        elif(arg=="--clean"):
             REMOVE_LAND = True
             REMOVE_CLOUDS = True
-        if(arg=="--remove-land"):
+        elif(arg=="--remove-land"):
             REMOVE_LAND = True
-        if(arg=="--remove-clouds"):
+        elif(arg=="--remove-clouds"):
             REMOVE_CLOUDS = True
+        else:
+            SCENE = arg
+
+    LAND_MASK = path.join(DATA_PATH,SCENE,SCENE+"_sr_land_water_qa.tif")
+    CLOUD_MASK = path.join(DATA_PATH,SCENE,SCENE+"_sr_cloud_qa.tif")
+    SNOW_MASK = path.join(DATA_PATH,SCENE,SCENE+"_sr_snow_qa.tif")
+    INPUT_FILE = LAND_MASK
 
 def main():
     global retained_tiles, no_water, too_cloudy
