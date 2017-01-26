@@ -51,36 +51,19 @@ def generate_tiles():
     generated_count = len(get_files_by_extension(path.join(SCRATCH_PATH, "land"), "png"))
     print("Generated " + str(generated_count) + " tiles")
 
-def remove_land(tiles, no_water):
+def apply_rules(candidates, rejects, subdirectory, rules):
     accum = []
 
-    for filename in tiles:
-        [minima, maxima, mean, stdev] = img.get_image_statistics(path.join(SCRATCH_PATH, "land", filename))
-
-        if(float(maxima) < 10):
-            no_water.append(filename)
-            continue
-
-        if(float(mean) < 10 and float(stdev) < 30):
-            no_water.append(filename)
-            continue
-
-        accum.append(filename)
-
-    return accum
-
-def remove_clouds(tiles, too_cloudy):
-    accum = []
-
-    for filename in retained_tiles:
-        [minima, maxima, mean, stdev] = img.get_image_statistics(path.join(SCRATCH_PATH, "cloud", filename))
-
-        if(float(minima) > 10):
-            too_cloudy.append(filename)
-            continue
-
-        if(float(mean) > 5 and float(stdev) < 80):
-            too_cloudy.append(filename)
+    print("Examining " + str(len(candidates)) + " tiles for " + subdirectory)
+    for filename in candidates:
+        done = False
+        statistics = img.get_image_statistics(path.join(SCRATCH_PATH, subdirectory, filename))
+        for rule in rules:
+            if(not rule(*statistics)):
+                rejects.append(filename)
+                done = True
+                break
+        if(done):
             continue
 
         accum.append(filename)
@@ -126,24 +109,30 @@ def main():
         retained_tiles = get_files_by_extension(path.join(SCRATCH_PATH, "land"), "png")
 
         if(REMOVE_LAND):
-            print("Examining " + str(len(retained_tiles)) + " tiles for water")
-            result = remove_land(retained_tiles, no_water)
-            print("Found " + str(len(result)) + " tiles with water or clouds to be retained (" + str(len(no_water)) + " tiles rejected)")
-            retained_tiles = result
+            retained_tiles = apply_rules(
+                retained_tiles, no_water, "land", [
+                    lambda imin, imax, imean, idev: float(imax) > 10 ,
+                    lambda imin, imax, imean, idev: float(imean) > 10 or float(idev) > 30 ,
+                ])
         else:
             print("Skipping land removal")
 
         if(REMOVE_CLOUDS):
-            print("Examining " + str(len(retained_tiles)) + " tiles for clouds")
-            result = remove_clouds(retained_tiles, too_cloudy)
-            print("Found " + str(len(result)) + " tiles with few enough clouds to be retained (" + str(len(too_cloudy)) + " tiles rejected)")
-            retained_tiles = result
+            retained_tiles = apply_rules(
+                retained_tiles, too_cloudy, "cloud", [
+                    lambda imin, imax, imean, idev: float(imin) < 10 ,
+                    lambda imin, imax, imean, idev: float(imean) < 5 or float(idev) > 80
+                ])
         else:
             print("Skipping cloud removal")
 
     if(VISUALIZE_SORT):
 
-        print("Generating visualization of retained tiles")
+        print(str(len(retained_tiles))+" tiles retained")
+        print(str(len(no_water))+" tiles without water rejected")
+        print(str(len(too_cloudy))+" tiles rejected for clouds")
+
+        print("Generating tile visualization")
 
         width = img.get_width(INPUT_FILE)
 
