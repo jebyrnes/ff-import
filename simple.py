@@ -8,18 +8,23 @@ contain land or contain too many clouds, as well as compositing the different
 bands together into an RGB image and boosting certain parts of the green
 channel to aid in kelp-spotting.
 
+    --clean                 Recreate scratch directory
+
+    --assemble              Perform color adjustment and build color output
+    --generate_tiles        Build color tiles of scene
+
     --generate-mask         Regenerate mask tiles
     --remove-land           Reject tiles that are only land
     --remove-clouds         Reject tiles that are too cloudy
-    --clean                 Reject both land and cloud tiles
     --reject                Sort tiles into accepted and directed folders
     --visualize             Show which tiles would be rejected
+
     --grid-size=XXX         Set custom tile size
     --source-dir=MY_PATH    Load scenes from a specified directory
     --land-threshhold=XX
     --land-sensitivity=XX   Configure land detection
     --cloud-threshhold=XX
-    --cloud-sensitivity=XX   Configure cloud detection
+    --cloud-sensitivity=XX  Configure cloud detection
     """)
 
 from os import path
@@ -34,6 +39,8 @@ REJECT_TILES = False
 VISUALIZE_SORT = False
 REMOVE_LAND = False
 REMOVE_CLOUDS = False
+ASSEMBLE_IMAGE = False
+SLICE_IMAGE = False
 
 CALI_SR = "LT50420362011199PAC01"
 TASM_SR = "LT50900902005246ASA01"
@@ -44,7 +51,7 @@ retained_tiles = []
 no_water = []
 too_cloudy = []
 
-def generate_tiles():
+def generate_mask_tiles():
     print("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
 
     print("Generating land mask tiles")
@@ -76,8 +83,10 @@ def apply_rules(candidates, rejects, subdirectory, rules):
     return accum
 
 def parse_options():
-    global GENERATE_MASK_TILES, VISUALIZE_SORT, REJECT_TILES, REMOVE_LAND, REMOVE_CLOUDS
+    global GENERATE_MASK_TILES, VISUALIZE_SORT, REJECT_TILES, REMOVE_LAND, REMOVE_CLOUDS, ASSEMBLE_IMAGE, SLICE_IMAGE
     global SCENE, LAND_MASK, CLOUD_MASK, SNOW_MASK, INPUT_FILE
+    rebuild = False
+
     for arg in argv:
         if(arg=="--help" or arg=="-?"):
             # do nothing, we'll fall through to usage
@@ -89,8 +98,7 @@ def parse_options():
         elif(arg=="--reject"):
             REJECT_TILES = True
         elif(arg=="--clean"):
-            REMOVE_LAND = True
-            REMOVE_CLOUDS = True
+            rebuild = True
         elif(arg=="--remove-land"):
             REMOVE_LAND = True
         elif(arg=="--remove-clouds"):
@@ -107,8 +115,16 @@ def parse_options():
             config.CLOUD_THRESHHOLD = int(arg.split("=")[1])
         elif(arg.startswith("--cloud-sensitivity=")):
             config.CLOUD_SENSITIVITY = int(arg.split("=")[1])
+        elif(arg=="--assemble"):
+            ASSEMBLE_IMAGE = True
+        elif(arg=="--generate-tiles"):
+            ASSEMBLE_IMAGE = True
+            SLICE_IMAGE = True
         else:
             SCENE = arg
+
+    if(rebuild):
+        build_scratch(config.SCRATCH_PATH)
 
     LAND_MASK = path.join(config.DATA_PATH,SCENE,SCENE+"_sr_land_water_qa.tif")
     CLOUD_MASK = path.join(config.DATA_PATH,SCENE,SCENE+"_sr_cloud_qa.tif")
@@ -120,16 +136,30 @@ def main():
 
     parse_options()
 
-    if(not GENERATE_MASK_TILES and not REJECT_TILES and not VISUALIZE_SORT):
+    if(not GENERATE_MASK_TILES and not REJECT_TILES and not VISUALIZE_SORT and not ASSEMBLE_IMAGE and not SLICE_IMAGE):
         usage()
         return
+
+    print("Processing scene " + SCENE)
+
+    if(ASSEMBLE_IMAGE):
+        img.assemble_image(
+            #TODO: all of these filenames are wrong :(
+            path.join(config.DATA_PATH, SCENE, "rendered_5.tif"),
+            path.join(config.DATA_PATH, SCENE, "rendered_4.tif"),
+            path.join(config.DATA_PATH, SCENE, "rendered_3.tif"),
+            config,
+            LAND_MASK)
     else:
-        print("Processing scene " + SCENE)
+        print("Skipping scene generation")
+
+    if(SLICE_IMAGE):
+        print("Generating rendered tiles")
+        img.prepare_tiles(config)
 
     if(GENERATE_MASK_TILES):
         print("Generating tiles")
-        build_scratch(config.SCRATCH_PATH)
-        generate_tiles()
+        generate_mask_tiles()
     else:
         print("Skipping mask tile generation")
 

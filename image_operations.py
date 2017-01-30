@@ -81,3 +81,65 @@ def draw_visualization(land, clouds, water, input):
         + ["-resize", "1000x1000", "output.png"]
 
     call(args)
+
+def assemble_image(red, green, blue, config, land):
+    boost_args = [
+        "./plm",
+        "0,0,4,0,5,24,13,28,14,14,100,100",
+        green,
+        path.join(config.SCRATCH_PATH, "boost.tif")
+    ]
+
+    print("Generating boosted green channel")
+    call(boost_args)
+
+    adjust_args = [
+        "convert",
+        "-quiet",
+        land,
+        "-blur",
+        config.MASK_BLUR,
+        land,
+        "-compose",
+        "darken",
+        "-composite",
+        path.join(config.SCRATCH_PATH, "boost.tif"),
+        "-compose",
+        "darken",
+        "-composite",
+        green,
+        "-compose",
+        "lighten",
+        "-composite",
+        path.join(config.SCRATCH_PATH, "adjust.tif")
+    ]
+
+    print("Adjusting boosted green channel")
+    call(adjust_args)
+
+
+    assemble_args = [
+        "convert",
+        "-quiet",
+        red,
+        path.join(config.SCRATCH_PATH, "adjust.tif"),
+        blue,
+        "-set",
+        "colorspace",
+        "RGB",
+        "-combine",
+        path.join(config.SCRATCH_PATH,"render.tif")
+    ]
+
+    print("Compositing red, green, and blue images")
+    call(assemble_args)
+
+def prepare_tiles(config):
+    call([
+        "convert",
+        "-quiet",
+        path.join(config.SCRATCH_PATH,"render.tif"),
+        "-crop",
+        str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
+        path.join(config.SCRATCH_PATH,"scene","tile_%04d.png")
+    ])
