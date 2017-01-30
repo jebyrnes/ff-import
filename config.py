@@ -1,5 +1,3 @@
-from os import path
-
 config = type('Config', (object,), {
     'GRID_SIZE': 400,
     'MASK_BLUR': "0x10",

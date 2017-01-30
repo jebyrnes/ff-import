@@ -1,4 +1,4 @@
-from os import listdir, path, mkdir
+from os import path
 from subprocess import check_output, call
 
 def get_width(file):

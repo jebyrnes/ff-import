@@ -3,7 +3,7 @@ from sys import argv
 
 import image_operations as img
 from file_operations import build_scratch, get_files_by_extension
-from config import *
+from config import config
 
 GENERATE_MASK_TILES = False
 REJECT_TILES = False
