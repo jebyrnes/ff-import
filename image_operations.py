@@ -26,7 +26,7 @@ def generate_rectangles(tiles, width, grid_size):
 
     return rects
 
-def prepare_land_mask(land, cloud, snow, blur, grid, scratch):
+def prepare_land_mask(land, cloud, snow, config):
     call([
         "convert",
         "-quiet",
@@ -40,22 +40,22 @@ def prepare_land_mask(land, cloud, snow, blur, grid, scratch):
         "minus_src",
         "-composite",
         "-blur",
-        blur,
+        config.MASK_BLUR,
         "-crop",
-        str(grid)+"x"+str(grid),
-        path.join(scratch,"land","tile_%04d.png")
+        str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
+        path.join(config.SCRATCH_PATH,"land","tile_%04d.png")
     ])
 
-def prepare_cloud_mask(cloud, blur, grid, scratch):
+def prepare_cloud_mask(cloud, config):
     call([
         "convert",
         "-quiet",
         cloud,
         "-blur",
-        blur,
+        config.MASK_BLUR,
         "-crop",
-        str(grid)+"x"+str(grid),
-        path.join(scratch,"cloud","tile_%04d.png")
+        str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
+        path.join(config.SCRATCH_PATH,"cloud","tile_%04d.png")
     ])
 
 def get_image_statistics(image):
