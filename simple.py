@@ -27,17 +27,20 @@ into subjects for Floating Forests. This includes sorting out tiles that only
 contain land or contain too many clouds, as well as compositing the different
 bands together into an RGB image and boosting certain parts of the green
 channel to aid in kelp-spotting.
+
+    --generate-mask         Regenerate mask tiles
+    --remove-land           Reject tiles that are only land
+    --remove-clouds         Reject tiles that are too cloudy
+    --clean                 Reject both land and cloud tiles
+    --reject                Sort tiles into accepted and directed folders
+    --visualize             Show which tiles would be rejected
+    --grid-size=XXX         Set custom tile size
+    --source-dir=MY_PATH    Load scenes from a specified directory
+    --land-threshhold=XX
+    --land-sensitivity=XX   Configure land detection
+    --cloud-threshhold=XX
+    --cloud-sensitivity=XX   Configure cloud detection
     """)
-    print("To regenerate mask tiles, use --generate-mask")
-    print("To reject tiles that are only land, use --remove-land")
-    print("To reject tiles that are too cloudy, use --remove-clouds")
-    print("To reject both land and cloud tiles, use --clean")
-    print("To sort tiles into reject and accept, use --reject")
-    print("To show which tiles would be rejected, use --visualize")
-    print("To override the default tile size, use --grid-size=XXX")
-    print("To load scenes from a specific directory, use --source-dir=MY_PATH")
-    print("To configure land detection, use --land-threshhold=XX or --land-sensitivity==XX")
-    print("To configure cloud detection, use --cloud-threshhold=XX or --cloud-sensitivity==XX")
 
 def generate_tiles():
     print("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
