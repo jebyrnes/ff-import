@@ -11,7 +11,7 @@ channel to aid in kelp-spotting.
     --clean                 Recreate scratch directory
 
     --assemble              Perform color adjustment and build color output
-    --generate_tiles        Build color tiles of scene
+    --generate-tiles        Build color tiles of scene
 
     --generate-mask         Regenerate mask tiles
     --remove-land           Reject tiles that are only land
@@ -20,11 +20,14 @@ channel to aid in kelp-spotting.
     --visualize             Show which tiles would be rejected
 
     --grid-size=XXX         Set custom tile size
+
     --source-dir=MY_PATH    Load scenes from a specified directory
-    --land-threshhold=XX
-    --land-sensitivity=XX   Configure land detection
-    --cloud-threshhold=XX
-    --cloud-sensitivity=XX  Configure cloud detection
+
+    --land-threshhold=XX    Configure land detection
+    --land-sensitivity=XX
+
+    --cloud-threshhold=XX   Configure cloud detection
+    --cloud-sensitivity=XX
     """)
 
 from os import path
@@ -42,10 +45,8 @@ REMOVE_CLOUDS = False
 ASSEMBLE_IMAGE = False
 SLICE_IMAGE = False
 
-CALI_SR = "LT50420362011199PAC01"
-TASM_SR = "LT50900902005246ASA01"
-
-SCENE = TASM_SR
+# CALI_SR = "LT50420362011199PAC01"
+# TASM_SR = "LT50900902005246ASA01"
 
 retained_tiles = []
 no_water = []
@@ -91,18 +92,27 @@ def parse_options():
         if(arg=="--help" or arg=="-?"):
             # do nothing, we'll fall through to usage
             noop = 0
-        elif(arg=="--generate-mask"):
-            GENERATE_MASK_TILES = True
-        elif(arg=="--visualize"):
-            VISUALIZE_SORT = True
-        elif(arg=="--reject"):
-            REJECT_TILES = True
+
+        elif(arg=="--assemble"):
+            ASSEMBLE_IMAGE = True
+        elif(arg=="--generate-tiles"):
+            ASSEMBLE_IMAGE = True
+            SLICE_IMAGE = True
+
         elif(arg=="--clean"):
             rebuild = True
+
+        elif(arg=="--generate-mask"):
+            GENERATE_MASK_TILES = True
         elif(arg=="--remove-land"):
             REMOVE_LAND = True
         elif(arg=="--remove-clouds"):
             REMOVE_CLOUDS = True
+        elif(arg=="--visualize"):
+            VISUALIZE_SORT = True
+        elif(arg=="--reject"):
+            REJECT_TILES = True
+
         elif(arg.startswith("--grid-size=")):
             config.GRID_SIZE = int(arg.split("=")[1])
         elif(arg.startswith("--source-dir=")):
@@ -115,11 +125,6 @@ def parse_options():
             config.CLOUD_THRESHHOLD = int(arg.split("=")[1])
         elif(arg.startswith("--cloud-sensitivity=")):
             config.CLOUD_SENSITIVITY = int(arg.split("=")[1])
-        elif(arg=="--assemble"):
-            ASSEMBLE_IMAGE = True
-        elif(arg=="--generate-tiles"):
-            ASSEMBLE_IMAGE = True
-            SLICE_IMAGE = True
         else:
             SCENE = arg
 
