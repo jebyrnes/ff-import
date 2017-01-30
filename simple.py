@@ -1,3 +1,27 @@
+def usage():
+    print("""
+simple.py (Simple Image Pipeline)
+
+This script is used to process satellite imagery from LANDSAT 4, 5, 7, and 8
+into subjects for Floating Forests. This includes sorting out tiles that only
+contain land or contain too many clouds, as well as compositing the different
+bands together into an RGB image and boosting certain parts of the green
+channel to aid in kelp-spotting.
+
+    --generate-mask         Regenerate mask tiles
+    --remove-land           Reject tiles that are only land
+    --remove-clouds         Reject tiles that are too cloudy
+    --clean                 Reject both land and cloud tiles
+    --reject                Sort tiles into accepted and directed folders
+    --visualize             Show which tiles would be rejected
+    --grid-size=XXX         Set custom tile size
+    --source-dir=MY_PATH    Load scenes from a specified directory
+    --land-threshhold=XX
+    --land-sensitivity=XX   Configure land detection
+    --cloud-threshhold=XX
+    --cloud-sensitivity=XX   Configure cloud detection
+    """)
+
 from os import path
 from sys import argv
 
@@ -19,28 +43,6 @@ SCENE = TASM_SR
 retained_tiles = []
 no_water = []
 too_cloudy = []
-
-def usage():
-    print("""
-This script is used to process satellite imagery from LANDSAT 4, 5, 7, and 8
-into subjects for Floating Forests. This includes sorting out tiles that only
-contain land or contain too many clouds, as well as compositing the different
-bands together into an RGB image and boosting certain parts of the green
-channel to aid in kelp-spotting.
-
-    --generate-mask         Regenerate mask tiles
-    --remove-land           Reject tiles that are only land
-    --remove-clouds         Reject tiles that are too cloudy
-    --clean                 Reject both land and cloud tiles
-    --reject                Sort tiles into accepted and directed folders
-    --visualize             Show which tiles would be rejected
-    --grid-size=XXX         Set custom tile size
-    --source-dir=MY_PATH    Load scenes from a specified directory
-    --land-threshhold=XX
-    --land-sensitivity=XX   Configure land detection
-    --cloud-threshhold=XX
-    --cloud-sensitivity=XX   Configure cloud detection
-    """)
 
 def generate_tiles():
     print("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
