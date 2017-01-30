@@ -21,7 +21,13 @@ no_water = []
 too_cloudy = []
 
 def usage():
-    print("USAGE")
+    print("""
+This script is used to process satellite imagery from LANDSAT 4, 5, 7, and 8
+into subjects for Floating Forests. This includes sorting out tiles that only
+contain land or contain too many clouds, as well as compositing the different
+bands together into an RGB image and boosting certain parts of the green
+channel to aid in kelp-spotting.
+    """)
     print("To regenerate mask tiles, use --generate-mask")
     print("To reject tiles that are only land, use --remove-land")
     print("To reject tiles that are too cloudy, use --remove-clouds")
