@@ -38,6 +38,7 @@ from sys import argv
 
 import image_operations as img
 from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
+from csv_operations import write_rejects
 from config import config
 
 # NOTE:
@@ -234,6 +235,8 @@ def main():
         for filename in too_cloudy:
             reject_tile(filename, config.SCRATCH_PATH)
             # write entry to CSV
+
+        write_rejects(path.join("tiles", "rejected.csv"), no_water, too_cloudy)
 
     print("Done")
 
