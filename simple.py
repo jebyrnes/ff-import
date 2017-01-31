@@ -19,7 +19,7 @@ channel to aid in kelp-spotting.
     --remove-land           Reject tiles that are only land
     --remove-clouds         Reject tiles that are too cloudy
     --remove-all            Reject tiles that are only land or too cloudy
-    --reject                Sort tiles into accepted and directed folders
+    --reject                Sort tiles into accepted and rejected folders
     --visualize             Show which tiles would be rejected
 
     --grid-size=XXX         Set custom tile size
@@ -37,7 +37,7 @@ from os import path
 from sys import argv
 
 import image_operations as img
-from file_operations import build_scratch, get_files_by_extension
+from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
 from config import config
 
 # NOTE:
@@ -216,6 +216,26 @@ def main():
         water = img.generate_rectangles(retained_tiles, width, config.GRID_SIZE)
 
         img.draw_visualization(land, clouds, water, config.INPUT_FILE)
+
+    if(config.REJECT_TILES):
+
+        print("Building scene tile output directory")
+        build_output()
+
+        print("Copying accepted tiles")
+        for filename in retained_tiles:
+            accept_tile(filename, config.SCRATCH_PATH)
+
+        print("Copying rejected tiles")
+        for filename in no_water:
+            reject_tile(filename, config.SCRATCH_PATH)
+            # write entry to CSV
+
+        for filename in too_cloudy:
+            reject_tile(filename, config.SCRATCH_PATH)
+            # write entry to CSV
+
+    print("Done")
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,26 @@
 from os import path, mkdir, listdir
-from shutil import rmtree
+from shutil import rmtree, copy
+
+def accept_tile(filename, scratch_path):
+    copy(
+        path.join(scratch_path, "scene", filename),
+        path.join("tiles", "accepted", filename)
+    )
+
+def reject_tile(filename, scratch_path):
+    copy(
+        path.join(scratch_path, "scene", filename),
+        path.join("tiles", "rejected", filename)
+    )
+
+def build_output():
+    if(path.exists("tiles")):
+        print("Removing existing output tiles")
+        rmtree("tiles")
+
+    mkdir("tiles")
+    mkdir(path.join("tiles","accepted"))
+    mkdir(path.join("tiles","rejected"))
 
 def build_scratch(scratch_path):
     if(path.exists(scratch_path)):
