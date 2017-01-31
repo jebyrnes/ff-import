@@ -26,16 +26,16 @@ def generate_rectangles(tiles, width, grid_size):
 
     return rects
 
-def prepare_land_mask(land, cloud, snow, config):
+def prepare_land_mask(config):
     call([
         "convert",
         "-quiet",
-        land,
-        cloud,
+        config.LAND_MASK,
+        config.CLOUD_MASK,
         "-compose",
         "add",
         "-composite",
-        snow,
+        config.SNOW_MASK,
         "-compose",
         "minus_src",
         "-composite",
@@ -46,11 +46,11 @@ def prepare_land_mask(land, cloud, snow, config):
         path.join(config.SCRATCH_PATH,"land","tile_%04d.png")
     ])
 
-def prepare_cloud_mask(cloud, config):
+def prepare_cloud_mask(config):
     call([
         "convert",
         "-quiet",
-        cloud,
+        config.CLOUD_MASK,
         "-blur",
         config.MASK_BLUR,
         "-crop",
@@ -82,7 +82,7 @@ def draw_visualization(land, clouds, water, input):
 
     call(args)
 
-def assemble_image(red, green, blue, config, land):
+def assemble_image(red, green, blue, config):
     boost_args = [
         "./plm",
         "0,0,4,0,5,24,13,28,14,14,100,100",
@@ -96,10 +96,10 @@ def assemble_image(red, green, blue, config, land):
     adjust_args = [
         "convert",
         "-quiet",
-        land,
+        config.LAND_MASK,
         "-blur",
         config.MASK_BLUR,
-        land,
+        config.LAND_MASK,
         "-compose",
         "darken",
         "-composite",

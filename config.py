@@ -6,5 +6,15 @@ config = type('Config', (object,), {
     'LAND_THRESHHOLD': 10,
     'LAND_SENSITIVITY': 30,
     'CLOUD_THRESHHOLD': 10,
-    'CLOUD_SENSITIVITY': 80
+    'CLOUD_SENSITIVITY': 80,
+
+    'SCENE': '',
+    'GENERATE_MASK_TILES': False,
+    'REJECT_TILES': False,
+    'VISUALIZE_SORT': False,
+    'REMOVE_LAND': False,
+    'REMOVE_CLOUDS': False,
+    'ASSEMBLE_IMAGE': False,
+    'SLICE_IMAGE': False,
+    'REBUILD': False
 })()
