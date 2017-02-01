@@ -11,7 +11,7 @@ bands together into an RGB image and boosting certain parts of the green
 channel to aid in kelp-spotting.
 
     --full                  Run full pipeline
-    
+
     --clean                 Recreate scratch directory
 
     --generate              Perform all scene tile generation tasks
@@ -155,6 +155,14 @@ def apply_rules(candidates, rejects, subdirectory, rules):
 
     return accum
 
+def index_to_location(filename, width, grid_size):
+    per_row = width // grid_size + 1
+    idx = int(filename.split("_")[1].split(".")[0])
+    row = idx // per_row
+    col = idx % per_row
+
+    return [row, col]
+
 def main():
 
     retained_tiles = []
@@ -239,6 +247,9 @@ def main():
         else:
             print("Skipping cloud removal")
 
+    if(config.VISUALIZE_SORT or config.REJECT_TILES):
+        config.width = img.get_width(config.INPUT_FILE)
+
     if(config.VISUALIZE_SORT):
 
         print(str(len(retained_tiles))+" tiles retained")
@@ -246,16 +257,14 @@ def main():
         print(str(len(too_cloudy))+" tiles rejected for clouds")
 
         print("Generating tile visualization (output.png)")
-
-        width = img.get_width(config.INPUT_FILE)
-
-        land = img.generate_rectangles(no_water, width, config.GRID_SIZE)
-        clouds = img.generate_rectangles(too_cloudy, width, config.GRID_SIZE)
-        water = img.generate_rectangles(retained_tiles, width, config.GRID_SIZE)
-
+        land = img.generate_rectangles(no_water, config.width, config.GRID_SIZE)
+        clouds = img.generate_rectangles(too_cloudy, config.width, config.GRID_SIZE)
+        water = img.generate_rectangles(retained_tiles, config.width, config.GRID_SIZE)
         img.draw_visualization(land, clouds, water, config.INPUT_FILE)
 
     if(config.REJECT_TILES):
+
+        rejects = []
 
         print("Building scene tile output directory")
         build_output()
@@ -267,13 +276,19 @@ def main():
         print("Copying rejected tiles")
         for filename in no_water:
             reject_tile(filename, config.SCRATCH_PATH)
-            # write entry to CSV
+            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
+            rejects.append({'filename': filename, 'reason': "No water",
+                'row': row, 'column': column })
 
         for filename in too_cloudy:
             reject_tile(filename, config.SCRATCH_PATH)
-            # write entry to CSV
+            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
+            rejects.append({'filename': filename, 'reason': "Too cloudy",
+                'row': row, 'column': column })
 
-        write_rejects(path.join("tiles", "rejected.csv"), no_water, too_cloudy)
+        print("Writing csv file")
+        rejects = sorted(rejects, key=lambda k: k['filename'])
+        write_rejects(path.join("tiles", "rejected.csv"), rejects)
 
     print("Done")
 

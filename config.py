@@ -17,5 +17,7 @@ config = type('Config', (object,), {
     'REMOVE_NEGATIVE': False,
     'ASSEMBLE_IMAGE': False,
     'SLICE_IMAGE': False,
-    'REBUILD': False
+    'REBUILD': False,
+
+    'width': 0
 })()
