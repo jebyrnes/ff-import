@@ -10,19 +10,24 @@ contain land or contain too many clouds, as well as compositing the different
 bands together into an RGB image and boosting certain parts of the green
 channel to aid in kelp-spotting.
 
+    --full                  Run full pipeline
+    
     --clean                 Recreate scratch directory
 
     --generate              Perform all scene tile generation tasks
-    --remove-negative       Remove negative pixels from data that happens
-                            to contain 16-bit signed values
     --assemble              Perform color adjustment and build color output
     --generate-tiles        Build color tiles of scene
 
+    --remove-negative       Remove negative pixels from data that happens
+                            to contain 16-bit signed values
+
+    --sort-tiles            Perform all tile sorting tasks
     --generate-mask         Regenerate mask tiles
     --remove-land           Reject tiles that are only land
     --remove-clouds         Reject tiles that are too cloudy
     --remove-all            Reject tiles that are only land or too cloudy
     --reject                Sort tiles into accepted and rejected folders
+
     --visualize             Show which tiles would be rejected
 
     --grid-size=XXX         Set custom tile size
@@ -59,6 +64,14 @@ def parse_options():
             # do nothing, we'll fall through to usage
             noop = 0
 
+        elif(arg=="--full"):
+            config.ASSEMBLE_IMAGE = True
+            config.SLICE_IMAGE = True
+            config.GENERATE_MASK_TILES = True
+            config.REMOVE_LAND = True
+            config.REMOVE_CLOUDS = True
+            config.REJECT_TILES = True
+
         elif(arg=="--remove-negative"):
             config.REMOVE_NEGATIVE = True
         elif(arg=="--assemble"):
@@ -66,13 +79,17 @@ def parse_options():
         elif(arg=="--generate-tiles"):
             config.SLICE_IMAGE = True
         elif(arg=="--generate"):
-            config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
 
         elif(arg=="--clean"):
             config.REBUILD = True
 
+        elif(arg=="--sort-tiles"):
+            config.GENERATE_MASK_TILES = True
+            config.REMOVE_LAND = True
+            config.REMOVE_CLOUDS = True
+            config.REJECT_TILES = True
         elif(arg=="--generate-mask"):
             config.GENERATE_MASK_TILES = True
         elif(arg=="--remove-land"):
