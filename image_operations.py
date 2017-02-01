@@ -82,6 +82,30 @@ def draw_visualization(land, clouds, water, input):
 
     call(args)
 
+def clamp_image(source, dest, config):
+    plm_args = [
+        "./plm",
+        "0,0,50,50,50,0,100,0",
+        source,
+        path.join(config.SCRATCH_PATH, "clamp.tif")
+    ]
+
+    print("Flattening negative values to zero")
+    call(plm_args)
+
+    print("Adjusting brightness")
+    convert_args = [
+        "convert",
+        path.join(config.SCRATCH_PATH, "clamp.tif"),
+        "-contrast-stretch",
+        "1x1%",
+        "-alpha",
+        "remove",
+        dest
+    ]
+
+    call(convert_args)
+
 def assemble_image(red, green, blue, config):
     boost_args = [
         "./plm",

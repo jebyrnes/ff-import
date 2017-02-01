@@ -14,6 +14,7 @@ config = type('Config', (object,), {
     'VISUALIZE_SORT': False,
     'REMOVE_LAND': False,
     'REMOVE_CLOUDS': False,
+    'REMOVE_NEGATIVE': False,
     'ASSEMBLE_IMAGE': False,
     'SLICE_IMAGE': False,
     'REBUILD': False

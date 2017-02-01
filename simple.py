@@ -12,6 +12,9 @@ channel to aid in kelp-spotting.
 
     --clean                 Recreate scratch directory
 
+    --generate              Perform all scene tile generation tasks
+    --remove-negative       Remove negative pixels from data that happens
+                            to contain 16-bit signed values
     --assemble              Perform color adjustment and build color output
     --generate-tiles        Build color tiles of scene
 
@@ -56,9 +59,14 @@ def parse_options():
             # do nothing, we'll fall through to usage
             noop = 0
 
+        elif(arg=="--remove-negative"):
+            config.REMOVE_NEGATIVE = True
         elif(arg=="--assemble"):
             config.ASSEMBLE_IMAGE = True
         elif(arg=="--generate-tiles"):
+            config.SLICE_IMAGE = True
+        elif(arg=="--generate"):
+            config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
 
@@ -144,6 +152,7 @@ def main():
         not config.VISUALIZE_SORT and
         not config.ASSEMBLE_IMAGE and
         not config.SLICE_IMAGE and
+        not config.REMOVE_NEGATIVE and
         not config.REBUILD):
         usage()
         return
@@ -153,6 +162,7 @@ def main():
         config.REJECT_TILES or
         config.VISUALIZE_SORT or
         config.ASSEMBLE_IMAGE or
+        config.REMOVE_NEGATIVE or
         config.SLICE_IMAGE) and
         config.SCENE == ''):
         usage()
@@ -163,12 +173,22 @@ def main():
 
     print("Processing scene " + config.SCENE)
 
+    if(config.REMOVE_NEGATIVE):
+        print("Processing source data to remove negative pixels")
+        for suffix in ["band5.tif", "band4.tif", "band3.tif"]:
+            filename = config.SCENE + "_sr_" + suffix
+            print("Processing image " + filename)
+            img.clamp_image(
+                path.join(config.DATA_PATH, config.SCENE, filename),
+                path.join(config.SCRATCH_PATH, suffix),
+                config
+            )
+
     if(config.ASSEMBLE_IMAGE):
         img.assemble_image(
-            #TODO: all of these filenames are wrong :(
-            path.join(config.DATA_PATH, config.SCENE, "rendered_5.tif"),
-            path.join(config.DATA_PATH, config.SCENE, "rendered_4.tif"),
-            path.join(config.DATA_PATH, config.SCENE, "rendered_3.tif"),
+            path.join(config.SCRATCH_PATH, "band5.tif"),
+            path.join(config.SCRATCH_PATH, "band4.tif"),
+            path.join(config.SCRATCH_PATH, "band3.tif"),
             config)
     else:
         print("Skipping scene generation")
