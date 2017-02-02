@@ -8,6 +8,9 @@ config = type('Config', (object,), {
     'CLOUD_THRESHHOLD': 10,
     'CLOUD_SENSITIVITY': 80,
 
+    'EROS_USERNAME': 'zooniverse-test',
+    'EROS_PASSWORD': 'PASSWORD',
+
     'SCENE': '',
     'GENERATE_MASK_TILES': False,
     'REJECT_TILES': False,
