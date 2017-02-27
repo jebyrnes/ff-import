@@ -30,6 +30,8 @@ channel to aid in kelp-spotting.
 
     --visualize             Show which tiles would be rejected
 
+    --manifest              Build a manifest file for Panoptes subject upload
+
     --grid-size=XXX         Set custom tile size
 
     --source-dir=MY_PATH    Load scenes from a specified directory
@@ -46,7 +48,7 @@ from sys import argv
 
 import image_operations as img
 from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
-from csv_operations import write_rejects
+from csv_operations import write_rejects, write_manifest
 from xml_operations import parse_metadata
 from config import config
 
@@ -294,6 +296,7 @@ def main():
     if(config.REJECT_TILES):
 
         rejects = []
+        accepts = []
 
         print("Building scene tile output directory")
         build_output()
@@ -301,6 +304,7 @@ def main():
         print("Copying accepted tiles")
         for filename in retained_tiles:
             accept_tile(filename, config.SCRATCH_PATH)
+            accepts.append(build_dict_for_csv(filename, "Accepted", config))
 
         print("Copying rejected tiles")
         for filename in no_water:
@@ -314,6 +318,9 @@ def main():
         print("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['filename'])
         write_rejects(path.join("tiles", "rejected.csv"), rejects)
+
+    if(config.BUILD_MANIFEST):
+        write_manifest(path.join("tiles","accepted","manifest.csv"), accepts)
 
     print("Done")
 
