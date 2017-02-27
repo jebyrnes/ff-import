@@ -66,6 +66,7 @@ def parse_options():
             noop = 0
 
         elif(arg=="--full"):
+            config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
             config.GENERATE_MASK_TILES = True
@@ -168,6 +169,19 @@ def index_to_location(filename, width, grid_size):
 
     return [row, col]
 
+def build_dict_for_csv(filename, reason, config):
+    [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
+    result = {
+        'filename': filename,
+        'reason': reason,
+        'row': row,
+        'column': column
+    }
+
+    result.update(config.METADATA)
+    return result
+
+
 def main():
 
     retained_tiles = []
@@ -208,7 +222,6 @@ def main():
     if(config.BUILD_MANIFEST):
         metadata = parse_metadata(config.SCENE, config.METADATA_SRC)
         config.METADATA = metadata
-        print(config.METADATA)
 
     if(config.REMOVE_NEGATIVE):
         print("Processing source data to remove negative pixels")
@@ -233,9 +246,13 @@ def main():
     if(config.SLICE_IMAGE):
         print("Generating scene tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
         img.prepare_tiles(config)
+    else:
+        print("Skipping scene tile generation")
 
     if(config.GENERATE_MASK_TILES):
         generate_mask_tiles()
+    else:
+        print("Skipping mask generation")
 
     if(config.REJECT_TILES or config.VISUALIZE_SORT):
 
@@ -288,15 +305,11 @@ def main():
         print("Copying rejected tiles")
         for filename in no_water:
             reject_tile(filename, config.SCRATCH_PATH)
-            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-            rejects.append({'filename': filename, 'reason': "No water",
-                'row': row, 'column': column })
+            rejects.append(build_dict_for_csv(filename, "No Water", config))
 
         for filename in too_cloudy:
             reject_tile(filename, config.SCRATCH_PATH)
-            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-            rejects.append({'filename': filename, 'reason': "Too cloudy",
-                'row': row, 'column': column })
+            rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
         print("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['filename'])
