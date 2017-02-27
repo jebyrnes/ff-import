@@ -21,6 +21,7 @@ config = type('Config', (object,), {
     'ASSEMBLE_IMAGE': False,
     'SLICE_IMAGE': False,
     'REBUILD': False,
+    'BUILD_MANIFEST': False,
 
     'width': 0
 })()

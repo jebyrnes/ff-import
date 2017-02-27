@@ -47,6 +47,7 @@ from sys import argv
 import image_operations as img
 from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
 from csv_operations import write_rejects
+from xml_operations import parse_metadata
 from config import config
 
 # NOTE:
@@ -71,6 +72,7 @@ def parse_options():
             config.REMOVE_LAND = True
             config.REMOVE_CLOUDS = True
             config.REJECT_TILES = True
+            config.BUILD_MANIFEST = True
 
         elif(arg=="--remove-negative"):
             config.REMOVE_NEGATIVE = True
@@ -103,6 +105,8 @@ def parse_options():
             config.VISUALIZE_SORT = True
         elif(arg=="--reject"):
             config.REJECT_TILES = True
+        elif(arg=="--manifest"):
+            config.BUILD_MANIFEST = True
 
         elif(arg.startswith("--grid-size=")):
             config.GRID_SIZE = int(arg.split("=")[1])
@@ -122,6 +126,7 @@ def parse_options():
     config.LAND_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_land_water_qa.tif")
     config.CLOUD_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_cloud_qa.tif")
     config.SNOW_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_snow_qa.tif")
+    config.METADATA_SRC = path.join(config.DATA_PATH,config.SCENE,config.SCENE+".xml")
     config.INPUT_FILE = config.LAND_MASK
 
 def generate_mask_tiles():
@@ -178,6 +183,7 @@ def main():
         not config.ASSEMBLE_IMAGE and
         not config.SLICE_IMAGE and
         not config.REMOVE_NEGATIVE and
+        not config.BUILD_MANIFEST and
         not config.REBUILD):
         usage()
         return
@@ -188,6 +194,7 @@ def main():
         config.VISUALIZE_SORT or
         config.ASSEMBLE_IMAGE or
         config.REMOVE_NEGATIVE or
+        config.BUILD_MANIFEST or
         config.SLICE_IMAGE) and
         config.SCENE == ''):
         usage()
@@ -197,6 +204,11 @@ def main():
         build_scratch(config.SCRATCH_PATH)
 
     print("Processing scene " + config.SCENE)
+
+    if(config.BUILD_MANIFEST):
+        metadata = parse_metadata(config.SCENE, config.METADATA_SRC)
+        config.METADATA = metadata
+        print(config.METADATA)
 
     if(config.REMOVE_NEGATIVE):
         print("Processing source data to remove negative pixels")
