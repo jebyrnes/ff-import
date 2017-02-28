@@ -30,6 +30,8 @@ channel to aid in kelp-spotting.
 
     --visualize             Show which tiles would be rejected
 
+    --manifest              Build a manifest file for Panoptes subject upload
+
     --grid-size=XXX         Set custom tile size
 
     --source-dir=MY_PATH    Load scenes from a specified directory
@@ -46,7 +48,8 @@ from sys import argv
 
 import image_operations as img
 from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
-from csv_operations import write_rejects
+from csv_operations import write_rejects, write_manifest
+from xml_operations import parse_metadata
 from config import config
 
 # NOTE:
@@ -65,12 +68,14 @@ def parse_options():
             noop = 0
 
         elif(arg=="--full"):
+            config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
             config.GENERATE_MASK_TILES = True
             config.REMOVE_LAND = True
             config.REMOVE_CLOUDS = True
             config.REJECT_TILES = True
+            config.BUILD_MANIFEST = True
 
         elif(arg=="--remove-negative"):
             config.REMOVE_NEGATIVE = True
@@ -103,6 +108,8 @@ def parse_options():
             config.VISUALIZE_SORT = True
         elif(arg=="--reject"):
             config.REJECT_TILES = True
+        elif(arg=="--manifest"):
+            config.BUILD_MANIFEST = True
 
         elif(arg.startswith("--grid-size=")):
             config.GRID_SIZE = int(arg.split("=")[1])
@@ -122,6 +129,7 @@ def parse_options():
     config.LAND_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_land_water_qa.tif")
     config.CLOUD_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_cloud_qa.tif")
     config.SNOW_MASK = path.join(config.DATA_PATH,config.SCENE,config.SCENE+"_sr_snow_qa.tif")
+    config.METADATA_SRC = path.join(config.DATA_PATH,config.SCENE,config.SCENE+".xml")
     config.INPUT_FILE = config.LAND_MASK
 
 def generate_mask_tiles():
@@ -163,6 +171,19 @@ def index_to_location(filename, width, grid_size):
 
     return [row, col]
 
+def build_dict_for_csv(filename, reason, config):
+    [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
+    result = {
+        'filename': filename,
+        'reason': reason,
+        'row': row,
+        'column': column
+    }
+
+    result.update(config.METADATA)
+    return result
+
+
 def main():
 
     retained_tiles = []
@@ -178,6 +199,7 @@ def main():
         not config.ASSEMBLE_IMAGE and
         not config.SLICE_IMAGE and
         not config.REMOVE_NEGATIVE and
+        not config.BUILD_MANIFEST and
         not config.REBUILD):
         usage()
         return
@@ -188,6 +210,7 @@ def main():
         config.VISUALIZE_SORT or
         config.ASSEMBLE_IMAGE or
         config.REMOVE_NEGATIVE or
+        config.BUILD_MANIFEST or
         config.SLICE_IMAGE) and
         config.SCENE == ''):
         usage()
@@ -197,6 +220,10 @@ def main():
         build_scratch(config.SCRATCH_PATH)
 
     print("Processing scene " + config.SCENE)
+
+    if(config.BUILD_MANIFEST):
+        metadata = parse_metadata(config.SCENE, config.METADATA_SRC)
+        config.METADATA = metadata
 
     if(config.REMOVE_NEGATIVE):
         print("Processing source data to remove negative pixels")
@@ -221,9 +248,13 @@ def main():
     if(config.SLICE_IMAGE):
         print("Generating scene tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
         img.prepare_tiles(config)
+    else:
+        print("Skipping scene tile generation")
 
     if(config.GENERATE_MASK_TILES):
         generate_mask_tiles()
+    else:
+        print("Skipping mask generation")
 
     if(config.REJECT_TILES or config.VISUALIZE_SORT):
 
@@ -265,6 +296,7 @@ def main():
     if(config.REJECT_TILES):
 
         rejects = []
+        accepts = []
 
         print("Building scene tile output directory")
         build_output()
@@ -272,23 +304,23 @@ def main():
         print("Copying accepted tiles")
         for filename in retained_tiles:
             accept_tile(filename, config.SCRATCH_PATH)
+            accepts.append(build_dict_for_csv(filename, "Accepted", config))
 
         print("Copying rejected tiles")
         for filename in no_water:
             reject_tile(filename, config.SCRATCH_PATH)
-            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-            rejects.append({'filename': filename, 'reason': "No water",
-                'row': row, 'column': column })
+            rejects.append(build_dict_for_csv(filename, "No Water", config))
 
         for filename in too_cloudy:
             reject_tile(filename, config.SCRATCH_PATH)
-            [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-            rejects.append({'filename': filename, 'reason': "Too cloudy",
-                'row': row, 'column': column })
+            rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
         print("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['filename'])
         write_rejects(path.join("tiles", "rejected.csv"), rejects)
+
+    if(config.BUILD_MANIFEST):
+        write_manifest(path.join("tiles","accepted","manifest.csv"), accepts)
 
     print("Done")
 
