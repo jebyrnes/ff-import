@@ -1,16 +1,11 @@
 from os import path
 from subprocess import check_output, call
+from wand.image import Image
+from wand_extensions import StatisticsImage
 
 def get_width(file):
-    return int(check_output([
-        "convert",
-        "-quiet",
-        file,
-        "-ping",
-        "-format",
-        '"%[fx:w]"',
-        "info:"
-    ]).strip('""'))
+    with Image(filename=file) as img:
+        return img.width
 
 def generate_rectangles(tiles, width, grid_size):
     rects = []
@@ -59,14 +54,8 @@ def prepare_cloud_mask(config):
     ])
 
 def get_image_statistics(image):
-    return check_output([
-        "convert",
-        "-quiet",
-        image,
-        "-format",
-        "\"%[fx:100*minima] %[fx:100*maxima] %[fx:100*mean] %[fx:100*standard_deviation]\"",
-        "info:"
-    ]).strip('"').split(" ")
+    with Image(filename=image) as img:
+        return StatisticsImage(img).my_statistics()
 
 def draw_visualization(land, clouds, water, input):
     args = \

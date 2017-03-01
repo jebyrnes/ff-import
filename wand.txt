@@ -1,0 +1,16 @@
+Wand requires v6.x of ImageMagick.
+
+This can be installed on a mac by doing:
+
+$ brew tap homebrew/versions
+$ brew install imagemagick@6 --with-hdri --with-quantum-32
+
+You will need to add the following line to your ~/.bash_profile:
+
+export PATH="/usr/local/opt/imagemagick@6/bin:$PATH"
+export MAGICK_HOME=/usr/local/opt/imagemagick@6
+
+Unfortunately, v6.x of ImageMagick does not handle the signed 16bit values
+in the geotiffs correctly. This means that we get a lot of bad noise on
+our images from sensor values between -2000 and 0, which are corrected for
+properly by our use of the PLM script.
