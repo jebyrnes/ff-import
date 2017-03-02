@@ -11,7 +11,11 @@ def parse_metadata(scene, xml_filename):
     result['acquired_date'] = tree.xpath("espa:global_metadata/espa:acquisition_date", namespaces=nsmap)[0].text
     result['acquired_time'] = tree.xpath("espa:global_metadata/espa:scene_center_time", namespaces=nsmap)[0].text
     result['sensor_id'] = tree.xpath("espa:global_metadata/espa:instrument", namespaces=nsmap)[0].text
-    result['earth_sun_distance'] = tree.xpath("espa:global_metadata/espa:earth_sun_distance", namespaces=nsmap)[0].text
+
+    esd = tree.xpath("espa:global_metadata/espa:earth_sun_distance", namespaces=nsmap)
+    if len(esd) > 0:
+        result['earth_sun_distance'] = esd[0].text
+
     result['spacecraft'] = tree.xpath("espa:global_metadata/espa:satellite", namespaces=nsmap)[0].text
     result['sun_azimuth'] = tree.xpath("espa:global_metadata/espa:solar_angles", namespaces=nsmap)[0].get("azimuth")
     result['sun_zenith'] = tree.xpath("espa:global_metadata/espa:solar_angles", namespaces=nsmap)[0].get("zenith")
