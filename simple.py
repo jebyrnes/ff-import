@@ -1,3 +1,14 @@
+from __future__ import division
+
+from os import path
+from sys import argv
+
+import image_operations as img
+from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
+from csv_operations import write_rejects, write_manifest
+from xml_operations import parse_metadata
+from config import config
+
 def usage():
     print("""
 simple.py (Simple Image Pipeline)
@@ -42,19 +53,6 @@ channel to aid in kelp-spotting.
     --cloud-threshhold=XX   Configure cloud detection
     --cloud-sensitivity=XX
     """)
-
-from os import path
-from sys import argv
-
-import image_operations as img
-from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
-from csv_operations import write_rejects, write_manifest
-from xml_operations import parse_metadata
-from config import config
-
-# NOTE:
-# CALI_SR = "LT50420362011199PAC01"
-# TASM_SR = "LT50900902005246ASA01"
 
 def parse_options():
     rebuild = False
@@ -171,13 +169,31 @@ def index_to_location(filename, width, grid_size):
 
     return [row, col]
 
+def compute_tile_coords(row, col, config):
+    scene_top = float(config.METADATA["scene_corner_UL_y"])
+    scene_bottom = float(config.METADATA["scene_corner_LR_y"])
+    scene_left = float(config.METADATA["scene_corner_UL_x"])
+    scene_right = float(config.METADATA["scene_corner_LR_x"])
+
+    scene_span_x = scene_right - scene_left
+    scene_span_y = scene_bottom - scene_top
+
+    left = ((col * config.GRID_SIZE) / config.width) * scene_span_x + scene_left
+    top = ((row * config.GRID_SIZE) / config.height) * scene_span_y + scene_top
+
+    return [left, top]
+
 def build_dict_for_csv(filename, reason, config):
     [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
+    [left, top] = compute_tile_coords(row, column, config)
+
     result = {
         'filename': filename,
         'reason': reason,
         'row': row,
-        'column': column
+        'column': column,
+        'tile_UL_x': left,
+        'tile_UL_y': top
     }
 
     result.update(config.METADATA)
@@ -215,6 +231,8 @@ def main():
         config.SCENE == ''):
         usage()
         return
+
+    [config.width, config.height] = img.get_dimensions(config.INPUT_FILE)
 
     if(config.REBUILD):
         build_scratch(config.SCRATCH_PATH)
@@ -278,9 +296,6 @@ def main():
         else:
             print("Skipping cloud removal")
 
-    if(config.VISUALIZE_SORT or config.REJECT_TILES):
-        config.width = img.get_width(config.INPUT_FILE)
-
     if(config.VISUALIZE_SORT):
 
         print(str(len(retained_tiles))+" tiles retained")
@@ -299,28 +314,28 @@ def main():
         accepts = []
 
         print("Building scene tile output directory")
-        build_output()
+        build_output(config.SCENE)
 
         print("Copying accepted tiles")
         for filename in retained_tiles:
-            accept_tile(filename, config.SCRATCH_PATH)
+            accept_tile(filename, config.SCRATCH_PATH, config.SCENE)
             accepts.append(build_dict_for_csv(filename, "Accepted", config))
 
         print("Copying rejected tiles")
         for filename in no_water:
-            reject_tile(filename, config.SCRATCH_PATH)
+            reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
             rejects.append(build_dict_for_csv(filename, "No Water", config))
 
         for filename in too_cloudy:
-            reject_tile(filename, config.SCRATCH_PATH)
+            reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
             rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
         print("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['filename'])
-        write_rejects(path.join("tiles", "rejected.csv"), rejects)
+        write_rejects(path.join("{0}_tiles".format(config.SCENE), "rejected.csv"), rejects)
 
     if(config.BUILD_MANIFEST):
-        write_manifest(path.join("tiles","accepted","manifest.csv"), accepts)
+        write_manifest(path.join("{0}_tiles".format(config.SCENE),"accepted","manifest.csv"), accepts)
 
     print("Done")
 

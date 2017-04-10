@@ -1,6 +1,14 @@
 from os import path
 from subprocess import check_output, call
 
+def get_dimensions(file):
+    with Image(filename=file) as img:
+        return [img.width, img.height]
+
+def get_height(file):
+    with Image(filename=file) as img:
+        return img.height
+
 def get_width(file):
     return int(check_output([
         "convert",
@@ -85,7 +93,7 @@ def draw_visualization(land, clouds, water, input):
 def clamp_image(source, dest, config):
     plm_args = [
         "./plm",
-        "0,0,50,50,50,0,100,0",
+        "0,0,50,100,50,0,100,0",
         source,
         path.join(config.SCRATCH_PATH, "clamp.tif")
     ]
@@ -97,6 +105,8 @@ def clamp_image(source, dest, config):
     convert_args = [
         "convert",
         path.join(config.SCRATCH_PATH, "clamp.tif"),
+        "-depth",
+        "8",
         "-contrast-stretch",
         "1x1%",
         "-alpha",
@@ -109,7 +119,7 @@ def clamp_image(source, dest, config):
 def assemble_image(red, green, blue, config):
     boost_args = [
         "./plm",
-        "0,0,4,0,5,24,13,28,14,14,100,100",
+        "0,0,8,8,8,14,13,23,13,13,100,100",
         green,
         path.join(config.SCRATCH_PATH, "boost.tif")
     ]
@@ -147,6 +157,7 @@ def assemble_image(red, green, blue, config):
         "-quiet",
         red,
         path.join(config.SCRATCH_PATH, "adjust.tif"),
+        # green,
         blue,
         "-set",
         "colorspace",

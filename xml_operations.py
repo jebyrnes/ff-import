@@ -26,8 +26,8 @@ def parse_metadata(scene, xml_filename):
 
     corners=tree.xpath("espa:global_metadata/espa:projection_information/espa:corner_point", namespaces=nsmap)
     for corner in corners:
-        result["corner_{0}".format(corner.get("location"))] = \
-            "{0}, {1}".format( corner.get("x"), corner.get("y") )
+        result["scene_corner_{0}_x".format(corner.get("location"))] = corner.get("x")
+        result["scene_corner_{0}_y".format(corner.get("location"))] = corner.get("y")
 
     covers = tree.xpath("espa:bands/espa:band[@name='cfmask']/espa:percent_coverage/espa:cover", namespaces=nsmap)
     for cover in covers:

@@ -1,7 +1,7 @@
 import csv
 
 def write_manifest(csv_filename, accepted):
-    if not accepted and len(accepted) > 0:
+    if not accepted or len(accepted) < 1:
         return
 
     with open(csv_filename, 'w') as csvfile:
@@ -24,7 +24,7 @@ def write_manifest(csv_filename, accepted):
 
 
 def write_rejects(csv_filename, rejects):
-    if not rejects and len(rejects) > 0:
+    if not rejects or len(rejects) < 1:
         return
 
     with open(csv_filename, 'w') as csvfile:
@@ -34,7 +34,7 @@ def write_rejects(csv_filename, rejects):
             if not key in fieldnames:
                 fieldnames.append(key)
 
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames, extrasaction='ignore')
 
         writer.writeheader()
 
