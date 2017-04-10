@@ -1,13 +1,37 @@
 from os import path
 from subprocess import check_output, call
 
+# def get_dimensions(file):
+#     with Image(filename=file) as img:
+#         return [img.width, img.height]
+#
+# def get_height(file):
+#     with Image(filename=file) as img:
+#         return img.height
+
 def get_dimensions(file):
-    with Image(filename=file) as img:
-        return [img.width, img.height]
+    result = check_output([
+        "convert",
+        "-quiet",
+        file,
+        "-ping",
+        "-format",
+        '%[fx:w] %[fx:h]',
+        "info:"
+    ]).split(' ')
+
+    return [int(result[0]), int(result[1])]
 
 def get_height(file):
-    with Image(filename=file) as img:
-        return img.height
+    return int(check_output([
+        "convert",
+        "-quiet",
+        file,
+        "-ping",
+        "-format",
+        '%[fx:h]',
+        "info:"
+    ]))
 
 def get_width(file):
     return int(check_output([
@@ -16,9 +40,9 @@ def get_width(file):
         file,
         "-ping",
         "-format",
-        '"%[fx:w]"',
+        '%[fx:w]',
         "info:"
-    ]).strip('""'))
+    ]))
 
 def generate_rectangles(tiles, width, grid_size):
     rects = []

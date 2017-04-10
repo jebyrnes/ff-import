@@ -6,10 +6,10 @@ def write_manifest(csv_filename, accepted):
 
     with open(csv_filename, 'w') as csvfile:
 
-        fieldnames = ['filename', 'row', 'column']
+        fieldnames = ['#filename', '#row', '#column']
 
         for key in sorted(accepted[0].keys()):
-            if(key=="reason"):
+            if(key=="#reason"):
                 continue
 
             if not key in fieldnames:
@@ -29,7 +29,7 @@ def write_rejects(csv_filename, rejects):
 
     with open(csv_filename, 'w') as csvfile:
 
-        fieldnames = ['filename', 'reason', 'row', 'column']
+        fieldnames = ['#filename', '#reason', '#row', '#column']
         for key in sorted(rejects[0].keys()):
             if not key in fieldnames:
                 fieldnames.append(key)

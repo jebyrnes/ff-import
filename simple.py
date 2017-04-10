@@ -4,8 +4,9 @@ from os import path
 from sys import argv
 
 import image_operations as img
-from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
 from csv_operations import write_rejects, write_manifest
+from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
+from gis_operations import compute_lat_lon, compute_tile_coords
 from xml_operations import parse_metadata
 from config import config
 
@@ -169,31 +170,28 @@ def index_to_location(filename, width, grid_size):
 
     return [row, col]
 
-def compute_tile_coords(row, col, config):
-    scene_top = float(config.METADATA["scene_corner_UL_y"])
-    scene_bottom = float(config.METADATA["scene_corner_LR_y"])
-    scene_left = float(config.METADATA["scene_corner_UL_x"])
-    scene_right = float(config.METADATA["scene_corner_LR_x"])
-
-    scene_span_x = scene_right - scene_left
-    scene_span_y = scene_bottom - scene_top
-
-    left = ((col * config.GRID_SIZE) / config.width) * scene_span_x + scene_left
-    top = ((row * config.GRID_SIZE) / config.height) * scene_span_y + scene_top
-
-    return [left, top]
-
 def build_dict_for_csv(filename, reason, config):
+    [width, height] = img.get_dimensions(path.join(config.SCRATCH_PATH, "scene", filename))
     [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-    [left, top] = compute_tile_coords(row, column, config)
+    [left, top, right, bottom] = compute_tile_coords(row, column, width, height, config)
+
+    [lat, lon] = compute_lat_lon((left+right)/2, (top+bottom)/2, config.METADATA['#utm_zone'])
 
     result = {
-        'filename': filename,
-        'reason': reason,
-        'row': row,
-        'column': column,
-        'tile_UL_x': left,
-        'tile_UL_y': top
+        '#filename': filename,
+        '#reason': reason,
+        '#row': row,
+        '#column': column,
+        '#width': width,
+        '#height': height,
+        '#tile_UL_x': left,
+        '#tile_UL_y': top,
+        '#tile_LR_x': right,
+        '#tile_LR_y': bottom,
+        '#tile_center_x': (left+right)/2,
+        '#tile_center_y': (top+bottom)/2,
+        'center_lat': lat,
+        'center_lon': lon
     }
 
     result.update(config.METADATA)
