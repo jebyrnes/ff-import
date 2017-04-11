@@ -1,12 +1,10 @@
-from __future__ import division
-
 from os import path
 from sys import argv
 
 import image_operations as img
 from csv_operations import write_rejects, write_manifest
 from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
-from gis_operations import compute_lat_lon, compute_tile_coords
+from gis_operations import compute_coordinate_metadata
 from xml_operations import parse_metadata
 from config import config
 
@@ -173,29 +171,21 @@ def index_to_location(filename, width, grid_size):
 def build_dict_for_csv(filename, reason, config):
     [width, height] = img.get_dimensions(path.join(config.SCRATCH_PATH, "scene", filename))
     [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
-    [left, top, right, bottom] = compute_tile_coords(row, column, width, height, config)
 
-    [lat, lon] = compute_lat_lon((left+right)/2, (top+bottom)/2, config.METADATA['#utm_zone'])
-
-    result = {
+    dict = {
         '#filename': filename,
         '#reason': reason,
         '#row': row,
         '#column': column,
         '#width': width,
         '#height': height,
-        '#tile_UL_x': left,
-        '#tile_UL_y': top,
-        '#tile_LR_x': right,
-        '#tile_LR_y': bottom,
-        '#tile_center_x': (left+right)/2,
-        '#tile_center_y': (top+bottom)/2,
-        'center_lat': lat,
-        'center_lon': lon
     }
 
-    result.update(config.METADATA)
-    return result
+    coordinate_metadata = compute_coordinate_metadata(row, column,width,height,config)
+
+    dict.update(coordinate_metadata)
+    dict.update(config.METADATA)
+    return dict
 
 
 def main():

@@ -22,11 +22,13 @@ def parse_metadata(scene, xml_filename):
     result['sensor_id'] = get_field_text(tree, "espa:global_metadata/espa:instrument")
     result['spacecraft'] = get_field_text(tree, 'espa:global_metadata/espa:satellite')
 
-    esd = tree.xpath("espa:global_metadata/espa:earth_sun_distance", namespaces=nsmap)
-    if len(esd) > 0:
-        result['!earth_sun_distance'] = esd[0].text
-    result['!sun_azimuth'] = tree.xpath("espa:global_metadata/espa:solar_angles", namespaces=nsmap)[0].get("azimuth")
-    result['!sun_zenith'] = tree.xpath("espa:global_metadata/espa:solar_angles", namespaces=nsmap)[0].get("zenith")
+    result['!earth_sun_distance'] = get_field_text(tree, "espa:global_metadata/espa:earth_sun_distance")
+
+    angles = tree.xpath("espa:global_metadata/espa:solar_angles", namespaces=nsmap)
+    if len(angles) > 0:
+        result['!sun_azimuth'] = angles[0].get("azimuth")
+        result['!sun_zenith'] = angles[0].get("zenith")
+
     covers = tree.xpath("espa:bands/espa:band[@name='cfmask']/espa:percent_coverage/espa:cover", namespaces=nsmap)
     for cover in covers:
         if cover.get("type") == "cloud":
@@ -34,15 +36,11 @@ def parse_metadata(scene, xml_filename):
         if cover.get("type") == "water":
             result['!water_cover'] = cover.text
 
-    result['#utm_zone'] = tree.xpath(
-        "espa:global_metadata/espa:projection_information/espa:utm_proj_params/espa:zone_code",
-        namespaces=nsmap
-    )[0].text
+    result['#utm_zone'] = get_field_text(tree, "espa:global_metadata/espa:projection_information/espa:utm_proj_params/espa:zone_code")
 
     corners=tree.xpath("espa:global_metadata/espa:projection_information/espa:corner_point", namespaces=nsmap)
     for corner in corners:
         result["#scene_corner_{0}_x".format(corner.get("location"))] = corner.get("x")
         result["#scene_corner_{0}_y".format(corner.get("location"))] = corner.get("y")
-
 
     return result
