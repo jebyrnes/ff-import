@@ -23,5 +23,7 @@ config = type('Config', (object,), {
     'REBUILD': False,
     'BUILD_MANIFEST': False,
 
+    'WITHTEMPDIR': False,
+
     'width': 0
 })()

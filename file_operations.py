@@ -1,4 +1,5 @@
 from os import path, mkdir, listdir
+import tempfile
 from shutil import rmtree, copy
 
 def accept_tile(filename, scratch_path, scene_name):
@@ -23,7 +24,14 @@ def build_output(scene_name):
     mkdir(path.join(target,"accepted"))
     mkdir(path.join(target,"rejected"))
 
-def build_scratch(scratch_path):
+def build_scratch(config):
+    should_use_tempdir = config.WITHTEMPDIR
+
+    if should_use_tempdir:
+        config.SCRATCH_PATH = tempfile.mkdtemp(prefix='ff-import-')
+        print("Using true scratch directory {0}".format(config.SCRATCH_PATH))
+
+    scratch_path = config.SCRATCH_PATH
     if(path.exists(scratch_path)):
         print("Removing existing tiles")
         rmtree(scratch_path)
@@ -43,3 +51,8 @@ def get_files_by_extension(filepath, extension):
             accum.append(filename)
 
     return accum
+
+def maybe_clean_scratch(config):
+    if config.WITHTEMPDIR:
+        print("attempting to clean up scratch directory")
+        rmtree(config.SCRATCH_PATH)

@@ -3,7 +3,7 @@ from sys import argv
 
 import image_operations as img
 from csv_operations import write_rejects, write_manifest
-from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile
+from file_operations import build_output, build_scratch, get_files_by_extension, accept_tile, reject_tile, maybe_clean_scratch
 from gis_operations import compute_coordinate_metadata
 from xml_operations import parse_metadata
 from config import config
@@ -54,7 +54,6 @@ channel to aid in kelp-spotting.
     """)
 
 def parse_options():
-    rebuild = False
 
     for arg in argv:
         if(arg=="simple.py"):
@@ -65,6 +64,8 @@ def parse_options():
             noop = 0
 
         elif(arg=="--full"):
+            config.WITHTEMPDIR = True
+            config.REBUILD = True
             config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
@@ -223,7 +224,7 @@ def main():
     [config.width, config.height] = img.get_dimensions(config.INPUT_FILE)
 
     if(config.REBUILD):
-        build_scratch(config.SCRATCH_PATH)
+        build_scratch(config)
 
     print("Processing scene " + config.SCENE)
 
@@ -319,11 +320,13 @@ def main():
             rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
         print("Writing csv file")
-        rejects = sorted(rejects, key=lambda k: k['filename'])
+        rejects = sorted(rejects, key=lambda k: k['#filename'])
         write_rejects(path.join("{0}_tiles".format(config.SCENE), "rejected.csv"), rejects)
 
     if(config.BUILD_MANIFEST):
         write_manifest(path.join("{0}_tiles".format(config.SCENE),"accepted","manifest.csv"), accepts)
+
+    maybe_clean_scratch(config)
 
     print("Done")
 
