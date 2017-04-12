@@ -1,3 +1,4 @@
+import logging
 from lxml import etree
 from os import path
 
@@ -10,7 +11,8 @@ def get_field_text(tree, path):
         return ''
 
 def parse_metadata(scene, xml_filename):
-    print("Parsing XML metadata from {0}".format(xml_filename))
+    logger = logging.getLogger(scene)
+    logger.info("Parsing XML metadata from {0}".format(xml_filename))
 
     result = { '!scene': scene }
 

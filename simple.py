@@ -1,5 +1,6 @@
 from os import path
 from sys import argv
+import logging
 
 import image_operations as img
 from csv_operations import write_rejects, write_manifest
@@ -7,6 +8,9 @@ from file_operations import build_output, build_scratch, get_files_by_extension,
 from gis_operations import compute_coordinate_metadata
 from xml_operations import parse_metadata
 from config import config
+
+logging.basicConfig(format='[ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s')
+logger = None
 
 def usage():
     print("""
@@ -54,7 +58,7 @@ channel to aid in kelp-spotting.
     """)
 
 def parse_options():
-
+    # note that logger is undefined when this method is active
     for arg in argv:
         if(arg=="simple.py"):
             continue
@@ -131,21 +135,21 @@ def parse_options():
     config.INPUT_FILE = config.LAND_MASK
 
 def generate_mask_tiles():
-    print("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
+    logger.info("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
 
-    print("Generating land mask tiles")
+    logger.info("Generating land mask tiles")
     img.prepare_land_mask(config)
 
-    print("Generating cloud mask tiles")
+    logger.info("Generating cloud mask tiles")
     img.prepare_cloud_mask(config)
 
     generated_count = len(get_files_by_extension(path.join(config.SCRATCH_PATH, "land"), "png"))
-    print("Generated " + str(generated_count) + " tiles")
+    logger.info("Generated " + str(generated_count) + " tiles")
 
 def apply_rules(candidates, rejects, subdirectory, rules):
     accum = []
 
-    print("Examining " + str(len(candidates)) + " tiles for " + subdirectory)
+    logger.info("Examining " + str(len(candidates)) + " tiles for " + subdirectory)
     for filename in candidates:
         done = False
         statistics = img.get_image_statistics(path.join(config.SCRATCH_PATH, subdirectory, filename))
@@ -221,22 +225,24 @@ def main():
         usage()
         return
 
+    logger = logging.getLogger(config.SCENE)
+    logger.setLevel(logging.INFO)
+    logger.info("Processing start")
+
     [config.width, config.height] = img.get_dimensions(config.INPUT_FILE)
 
     if(config.REBUILD):
         build_scratch(config)
-
-    print("Processing scene " + config.SCENE)
 
     if(config.BUILD_MANIFEST):
         metadata = parse_metadata(config.SCENE, config.METADATA_SRC)
         config.METADATA = metadata
 
     if(config.REMOVE_NEGATIVE):
-        print("Processing source data to remove negative pixels")
+        logger.info("Processing source data to remove negative pixels")
         for suffix in ["band5.tif", "band4.tif", "band3.tif"]:
             filename = config.SCENE + "_sr_" + suffix
-            print("Processing image " + filename)
+            logger.info("Processing image " + filename)
             img.clamp_image(
                 path.join(config.DATA_PATH, config.SCENE, filename),
                 path.join(config.SCRATCH_PATH, suffix),
@@ -250,18 +256,18 @@ def main():
             path.join(config.SCRATCH_PATH, "band3.tif"),
             config)
     else:
-        print("Skipping scene generation")
+        logger.info("Skipping scene generation")
 
     if(config.SLICE_IMAGE):
-        print("Generating scene tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
+        logger.info("Generating scene tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
         img.prepare_tiles(config)
     else:
-        print("Skipping scene tile generation")
+        logger.info("Skipping scene tile generation")
 
     if(config.GENERATE_MASK_TILES):
         generate_mask_tiles()
     else:
-        print("Skipping mask generation")
+        logger.info("Skipping mask generation")
 
     if(config.REJECT_TILES or config.VISUALIZE_SORT):
 
@@ -274,7 +280,7 @@ def main():
                     lambda imin, imax, imean, idev: float(imean) > config.LAND_THRESHHOLD or float(idev) > config.LAND_SENSITIVITY ,
                 ])
         else:
-            print("Skipping land removal")
+            logger.info("Skipping land removal")
 
         if(config.REMOVE_CLOUDS):
             retained_tiles = apply_rules(
@@ -283,15 +289,15 @@ def main():
                     lambda imin, imax, imean, idev: float(imean) < config.CLOUD_THRESHHOLD or float(idev) > config.CLOUD_SENSITIVITY
                 ])
         else:
-            print("Skipping cloud removal")
+            logger.info("Skipping cloud removal")
 
     if(config.VISUALIZE_SORT):
 
-        print(str(len(retained_tiles))+" tiles retained")
-        print(str(len(no_water))+" tiles without water rejected")
-        print(str(len(too_cloudy))+" tiles rejected for clouds")
+        logger.info(str(len(retained_tiles))+" tiles retained")
+        logger.info(str(len(no_water))+" tiles without water rejected")
+        logger.info(str(len(too_cloudy))+" tiles rejected for clouds")
 
-        print("Generating tile visualization (output.png)")
+        logger.info("Generating tile visualization (output.png)")
         land = img.generate_rectangles(no_water, config.width, config.GRID_SIZE)
         clouds = img.generate_rectangles(too_cloudy, config.width, config.GRID_SIZE)
         water = img.generate_rectangles(retained_tiles, config.width, config.GRID_SIZE)
@@ -302,15 +308,15 @@ def main():
         rejects = []
         accepts = []
 
-        print("Building scene tile output directory")
+        logger.info("Building scene tile output directory")
         build_output(config.SCENE)
 
-        print("Copying accepted tiles")
+        logger.info("Copying accepted tiles")
         for filename in retained_tiles:
-            accept_tile(filename, config.SCRATCH_PATH, config.SCENE)
+            accept_tile(filename, config)
             accepts.append(build_dict_for_csv(filename, "Accepted", config))
 
-        print("Copying rejected tiles")
+        logger.info("Copying rejected tiles")
         for filename in no_water:
             reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
             rejects.append(build_dict_for_csv(filename, "No Water", config))
@@ -319,7 +325,7 @@ def main():
             reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
             rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
-        print("Writing csv file")
+        logger.info("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['#filename'])
         write_rejects(path.join("{0}_tiles".format(config.SCENE), "rejected.csv"), rejects)
 
@@ -328,7 +334,7 @@ def main():
 
     maybe_clean_scratch(config)
 
-    print("Done")
+    logger.info("Processing finished")
 
 if __name__ == "__main__":
     main()

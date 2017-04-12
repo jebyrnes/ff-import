@@ -1,3 +1,4 @@
+import logging
 from os import path
 from subprocess import check_output, call
 
@@ -115,6 +116,7 @@ def draw_visualization(land, clouds, water, input):
     call(args)
 
 def clamp_image(source, dest, config):
+    logger = logging.getLogger(config.SCENE)
     plm_args = [
         "./plm",
         "0,0,50,100,50,0,100,0",
@@ -122,10 +124,10 @@ def clamp_image(source, dest, config):
         path.join(config.SCRATCH_PATH, "clamp.tif")
     ]
 
-    print("Flattening negative values to zero")
+    logger.info("Flattening negative values to zero")
     call(plm_args)
 
-    print("Adjusting brightness")
+    logger.info("Adjusting brightness")
     convert_args = [
         "convert",
         path.join(config.SCRATCH_PATH, "clamp.tif"),
@@ -141,6 +143,7 @@ def clamp_image(source, dest, config):
     call(convert_args)
 
 def assemble_image(red, green, blue, config):
+    logger = logging.getLogger(config.SCENE)
     boost_args = [
         "./plm",
         "0,0,8,8,8,14,13,23,13,13,100,100",
@@ -148,7 +151,7 @@ def assemble_image(red, green, blue, config):
         path.join(config.SCRATCH_PATH, "boost.tif")
     ]
 
-    print("Generating boosted green channel")
+    logger.info("Generating boosted green channel")
     call(boost_args)
 
     adjust_args = [
@@ -172,7 +175,7 @@ def assemble_image(red, green, blue, config):
         path.join(config.SCRATCH_PATH, "adjust.tif")
     ]
 
-    print("Adjusting boosted green channel")
+    logger.info("Adjusting boosted green channel")
     call(adjust_args)
 
 
@@ -190,7 +193,7 @@ def assemble_image(red, green, blue, config):
         path.join(config.SCRATCH_PATH,"render.tif")
     ]
 
-    print("Compositing red, green, and blue images")
+    logger.info("Compositing red, green, and blue images")
     call(assemble_args)
 
 def prepare_tiles(config):
