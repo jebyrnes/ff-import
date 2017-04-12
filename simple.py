@@ -135,6 +135,7 @@ def parse_options():
     config.INPUT_FILE = config.LAND_MASK
 
 def generate_mask_tiles():
+    logger = logging.getLogger(config.SCENE)
     logger.info("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
 
     logger.info("Generating land mask tiles")
@@ -148,6 +149,7 @@ def generate_mask_tiles():
 
 def apply_rules(candidates, rejects, subdirectory, rules):
     accum = []
+    logger = logging.getLogger(config.SCENE)
 
     logger.info("Examining " + str(len(candidates)) + " tiles for " + subdirectory)
     for filename in candidates:
@@ -318,11 +320,11 @@ def main():
 
         logger.info("Copying rejected tiles")
         for filename in no_water:
-            reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
+            reject_tile(filename, config)
             rejects.append(build_dict_for_csv(filename, "No Water", config))
 
         for filename in too_cloudy:
-            reject_tile(filename, config.SCRATCH_PATH, config.SCENE)
+            reject_tile(filename, config)
             rejects.append(build_dict_for_csv(filename, "Too Cloudy", config))
 
         logger.info("Writing csv file")
