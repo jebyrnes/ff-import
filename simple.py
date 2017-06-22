@@ -75,7 +75,7 @@ def parse_options():
             () #noqa
 
         elif arg == "--full":
-            # config.WITHTEMPDIR = True
+            config.WITHTEMPDIR = True
             config.REBUILD = True
             config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
@@ -270,7 +270,8 @@ def main():
 
     if config.REMOVE_NEGATIVE:
         logger.info("Processing source data to remove negative pixels")
-        for suffix in ["band3.tif", "band4.tif", "band1.tif"]:
+        # for suffix in ["band3.tif", "band4.tif", "band1.tif"]:
+        for suffix in ["band4.tif", "band5.tif", "band2.tif"]:
             filename = config.SCENE_NAME + "_sr_" + suffix
             logger.info("Processing image " + filename)
             img.clamp_image(
@@ -278,9 +279,9 @@ def main():
                 path.join(config.SCRATCH_PATH, suffix),
                 config
             )
-        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "band3.png")
-        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "band4.png")
-        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "band1.png")
+        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "band4.png")
+        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "band5.png")
+        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "band2.png")
 
     if config.ASSEMBLE_IMAGE:
         img.assemble_image(
