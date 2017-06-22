@@ -75,7 +75,7 @@ def parse_options():
             () #noqa
 
         elif arg == "--full":
-            config.WITHTEMPDIR = True
+            # config.WITHTEMPDIR = True
             config.REBUILD = True
             config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
@@ -278,9 +278,9 @@ def main():
                 path.join(config.SCRATCH_PATH, suffix),
                 config
             )
-        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "band3.tif")
-        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "band4.tif")
-        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "band1.tif")
+        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "band3.png")
+        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "band4.png")
+        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "band1.png")
 
     if config.ASSEMBLE_IMAGE:
         img.assemble_image(

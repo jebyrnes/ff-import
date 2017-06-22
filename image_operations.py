@@ -73,6 +73,8 @@ def prepare_land_mask(config):
     call([
         "convert",
         "-quiet",
+        "-type",
+        "GrayScale",
         config.WATER_MASK,
         config.CLOUD_MASK,
         "-compose",
@@ -93,6 +95,8 @@ def prepare_cloud_mask(config):
     call([
         "convert",
         "-quiet",
+        "-type",
+        "GrayScale",
         config.CLOUD_MASK,
         "-blur",
         config.MASK_BLUR,
@@ -131,7 +135,7 @@ def clamp_image(source, dest, config):
         "./plm",
         "0,0,50,100,50,0,100,0",
         source,
-        path.join(config.SCRATCH_PATH, "clamp.tif")
+        path.join(config.SCRATCH_PATH, "clamp.png")
     ]
 
     logger.info("Flattening negative values to zero")
@@ -140,14 +144,17 @@ def clamp_image(source, dest, config):
     logger.info("Adjusting brightness")
     convert_args = [
         "convert",
-        path.join(config.SCRATCH_PATH, "clamp.tif"),
-        "-depth",
-        "8",
-        "-contrast-stretch",
-        "1x1%",
+        "-quiet",
+        "-type",
+        "GrayScale",
         "-alpha",
         "remove",
-        dest
+        path.join(config.SCRATCH_PATH, "clamp.png"),
+        "-contrast-stretch",
+        "1x1%",
+        "-depth",
+        "8",
+        path.splitext(dest)[0] + '.png'
     ]
 
     call(convert_args)
@@ -158,7 +165,7 @@ def assemble_image(red, green, blue, config):
         "./plm",
         "0,0,8,8,8,14,13,23,13,13,100,100",
         green,
-        path.join(config.SCRATCH_PATH, "boost.tif")
+        path.join(config.SCRATCH_PATH, "boost.png")
     ]
 
     logger.info("Generating boosted green channel")
@@ -167,6 +174,8 @@ def assemble_image(red, green, blue, config):
     adjust_args = [
         "convert",
         "-quiet",
+        "-type",
+        "GrayScale",
         config.WATER_MASK,
         "-blur",
         config.MASK_BLUR,
@@ -174,7 +183,7 @@ def assemble_image(red, green, blue, config):
         "-compose",
         "darken",
         "-composite",
-        path.join(config.SCRATCH_PATH, "boost.tif"),
+        path.join(config.SCRATCH_PATH, "boost.png"),
         "-compose",
         "darken",
         "-composite",
@@ -182,7 +191,7 @@ def assemble_image(red, green, blue, config):
         "-compose",
         "lighten",
         "-composite",
-        path.join(config.SCRATCH_PATH, "adjust.tif")
+        path.join(config.SCRATCH_PATH, "adjust.png")
     ]
 
     logger.info("Adjusting boosted green channel")
@@ -193,14 +202,16 @@ def assemble_image(red, green, blue, config):
         "convert",
         "-quiet",
         red,
-        path.join(config.SCRATCH_PATH, "adjust.tif"),
+        path.join(config.SCRATCH_PATH, "adjust.png"),
         # green,
         blue,
         "-set",
         "colorspace",
         "RGB",
+        "-depth",
+        "8",
         "-combine",
-        path.join(config.SCRATCH_PATH, "render.tif")
+        path.join(config.SCRATCH_PATH, "render.png")
     ]
 
     logger.info("Compositing red, green, and blue images")
@@ -210,7 +221,7 @@ def prepare_tiles(config):
     call([
         "convert",
         "-quiet",
-        path.join(config.SCRATCH_PATH, "render.tif"),
+        path.join(config.SCRATCH_PATH, "render.png"),
         "-crop",
         str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
         path.join(config.SCRATCH_PATH, "scene", "tile_%04d.png")
