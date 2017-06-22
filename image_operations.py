@@ -10,11 +10,11 @@ from subprocess import check_output, call
 #     with Image(filename=file) as img:
 #         return img.height
 
-def get_dimensions(file):
+def get_dimensions(a_file):
     result = check_output([
         "convert",
         "-quiet",
-        file,
+        a_file,
         "-ping",
         "-format",
         '%[fx:w] %[fx:h]',
@@ -23,22 +23,22 @@ def get_dimensions(file):
 
     return [int(result[0]), int(result[1])]
 
-def get_height(file):
+def get_height(a_file):
     return int(check_output([
         "convert",
         "-quiet",
-        file,
+        a_file,
         "-ping",
         "-format",
         '%[fx:h]',
         "info:"
     ]))
 
-def get_width(file):
+def get_width(a_file):
     return int(check_output([
         "convert",
         "-quiet",
-        file,
+        a_file,
         "-ping",
         "-format",
         '%[fx:w]',
@@ -59,11 +59,25 @@ def generate_rectangles(tiles, width, grid_size):
 
     return rects
 
+def build_mask_files(config, which_lut, which_mask):
+    call([
+        "convert",
+        "-quiet",
+        "-type",
+        "GrayScale",
+        "-clut",
+        config.NEW_MASK,
+        which_lut,
+        "-clamp",
+        which_mask
+    ])
+    return
+
 def prepare_land_mask(config):
     call([
         "convert",
         "-quiet",
-        config.LAND_MASK,
+        config.WATER_MASK,
         config.CLOUD_MASK,
         "-compose",
         "add",
@@ -116,7 +130,7 @@ def draw_visualization(land, clouds, water, input):
     call(args)
 
 def clamp_image(source, dest, config):
-    logger = logging.getLogger(config.SCENE)
+    logger = logging.getLogger(config.SCENE_NAME)
     plm_args = [
         "./plm",
         "0,0,50,100,50,0,100,0",
@@ -143,7 +157,7 @@ def clamp_image(source, dest, config):
     call(convert_args)
 
 def assemble_image(red, green, blue, config):
-    logger = logging.getLogger(config.SCENE)
+    logger = logging.getLogger(config.SCENE_NAME)
     boost_args = [
         "./plm",
         "0,0,8,8,8,14,13,23,13,13,100,100",
@@ -157,10 +171,10 @@ def assemble_image(red, green, blue, config):
     adjust_args = [
         "convert",
         "-quiet",
-        config.LAND_MASK,
+        config.WATER_MASK,
         "-blur",
         config.MASK_BLUR,
-        config.LAND_MASK,
+        config.WATER_MASK,
         "-compose",
         "darken",
         "-composite",
