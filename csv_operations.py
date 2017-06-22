@@ -9,7 +9,7 @@ def write_manifest(csv_filename, accepted):
         fieldnames = ['#filename', '#row', '#column']
 
         for key in sorted(accepted[0].keys()):
-            if(key=="#reason"):
+            if key == "#reason":
                 continue
 
             if not key in fieldnames:

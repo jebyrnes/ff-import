@@ -23,14 +23,14 @@ def build_output(scene_name):
     logger = logging.getLogger(scene_name)
     target = "{0}_tiles".format(scene_name)
 
-    if(path.exists(target)):
+    if path.exists(target):
         logger.info("Removing existing output tiles")
         rmtree(target)
 
     logger.info("Building output subdirectories")
     mkdir(target)
-    mkdir(path.join(target,"accepted"))
-    mkdir(path.join(target,"rejected"))
+    mkdir(path.join(target, "accepted"))
+    mkdir(path.join(target, "rejected"))
 
 def scratch_exists(config):
     return path.exists(config.SCRATCH_PATH)

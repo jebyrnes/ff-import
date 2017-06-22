@@ -72,7 +72,7 @@ def parse_options():
 
         if arg == "--help" or arg == "-?":
             # do nothing, we'll fall through to usage
-            ()
+            () #noqa
 
         elif arg == "--full":
             config.WITHTEMPDIR = True
@@ -145,7 +145,9 @@ def parse_options():
 
 def generate_mask_tiles():
     logger = logging.getLogger(config.SCENE_NAME)
-    logger.info("Generating mask tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
+    logger.info(
+        "Generating mask tiles of " + str(config.GRID_SIZE) +
+        "x" + str(config.GRID_SIZE) + " pixels")
 
     logger.info("Generating land mask tiles")
     img.prepare_land_mask(config)
@@ -163,13 +165,16 @@ def apply_rules(candidates, rejects, subdirectory, rules):
     logger.info("Examining " + str(len(candidates)) + " tiles for " + subdirectory)
     for filename in candidates:
         done = False
-        statistics = img.get_image_statistics(path.join(config.SCRATCH_PATH, subdirectory, filename))
+        statistics = img.get_image_statistics(path.join(
+            config.SCRATCH_PATH,
+            subdirectory,
+            filename))
         for rule in rules:
-            if(not rule(*statistics)):
+            if not rule(*statistics):
                 rejects.append(filename)
                 done = True
                 break
-        if(done):
+        if done:
             continue
 
         accum.append(filename)
@@ -188,7 +193,7 @@ def build_dict_for_csv(filename, reason, config):
     [width, height] = img.get_dimensions(path.join(config.SCRATCH_PATH, "scene", filename))
     [row, column] = index_to_location(filename, config.width, config.GRID_SIZE)
 
-    dict = {
+    my_dict = {
         '#filename': filename,
         '#reason': reason,
         '#row': row,
@@ -197,11 +202,11 @@ def build_dict_for_csv(filename, reason, config):
         '#height': height,
     }
 
-    coordinate_metadata = compute_coordinate_metadata(row, column,width,height,config)
+    coordinate_metadata = compute_coordinate_metadata(row, column, width, height, config)
 
-    dict.update(coordinate_metadata)
-    dict.update(config.METADATA)
-    return dict
+    my_dict.update(coordinate_metadata)
+    my_dict.update(config.METADATA)
+    return my_dict
 
 
 def main():
@@ -212,28 +217,26 @@ def main():
 
     parse_options()
 
-    if(
-        not config.GENERATE_MASK_TILES and
-        not config.REJECT_TILES and
-        not config.VISUALIZE_SORT and
-        not config.ASSEMBLE_IMAGE and
-        not config.SLICE_IMAGE and
-        not config.REMOVE_NEGATIVE and
-        not config.BUILD_MANIFEST and
-        not config.DO_LUT and
-        not config.REBUILD):
+    if  (not config.GENERATE_MASK_TILES and
+         not config.REJECT_TILES and
+         not config.VISUALIZE_SORT and
+         not config.ASSEMBLE_IMAGE and
+         not config.SLICE_IMAGE and
+         not config.REMOVE_NEGATIVE and
+         not config.BUILD_MANIFEST and
+         not config.DO_LUT and
+         not config.REBUILD):
         usage()
         return
 
-    if(
-        (config.GENERATE_MASK_TILES or
-        config.REJECT_TILES or
-        config.VISUALIZE_SORT or
-        config.ASSEMBLE_IMAGE or
-        config.REMOVE_NEGATIVE or
-        config.BUILD_MANIFEST or
-        config.SLICE_IMAGE) and
-        config.SCENE_DIR  ==  ''):
+    if ((config.GENERATE_MASK_TILES or
+         config.REJECT_TILES or
+         config.VISUALIZE_SORT or
+         config.ASSEMBLE_IMAGE or
+         config.REMOVE_NEGATIVE or
+         config.BUILD_MANIFEST or
+         config.SLICE_IMAGE) and
+            config.SCENE_DIR == ''):
         usage()
         return
 
@@ -284,42 +287,48 @@ def main():
             path.join(config.RED_CHANNEL),
             path.join(config.GREEN_CHANNEL),
             path.join(config.BLUE_CHANNEL),
-            # path.join(config.SCRATCH_PATH, "band5.tif"),
-            # path.join(config.SCRATCH_PATH, "band4.tif"),
-            # path.join(config.SCRATCH_PATH, "band3.tif"),
             config)
     else:
         logger.info("Skipping scene generation")
 
     if config.SLICE_IMAGE:
-        logger.info("Generating scene tiles of "+str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE)+" pixels")
+        logger.info(
+            "Generating scene tiles of " +
+            str(config.GRID_SIZE) + "x" +
+            str(config.GRID_SIZE)+" pixels")
         img.prepare_tiles(config)
     else:
         logger.info("Skipping scene tile generation")
 
-    if(config.GENERATE_MASK_TILES):
+    if config.GENERATE_MASK_TILES:
         generate_mask_tiles()
     else:
         logger.info("Skipping mask generation")
 
-    if(config.REJECT_TILES or config.VISUALIZE_SORT):
+    if config.REJECT_TILES or config.VISUALIZE_SORT:
 
         retained_tiles = get_files_by_extension(path.join(config.SCRATCH_PATH, "land"), "png")
 
-        if(config.REMOVE_LAND):
+        if config.REMOVE_LAND:
             retained_tiles = apply_rules(
                 retained_tiles, no_water, "land", [
                     lambda imin, imax, imean, idev: float(imax) > config.LAND_THRESHHOLD,
-                    lambda imin, imax, imean, idev: float(imean) > config.LAND_THRESHHOLD or float(idev) > config.LAND_SENSITIVITY
+                    lambda imin, imax, imean, idev: (
+                        float(imean) > config.LAND_THRESHHOLD or
+                        float(idev) > config.LAND_SENSITIVITY
+                    )
                 ])
         else:
             logger.info("Skipping land removal")
 
-        if(config.REMOVE_CLOUDS):
+        if config.REMOVE_CLOUDS:
             retained_tiles = apply_rules(
                 retained_tiles, too_cloudy, "cloud", [
                     lambda imin, imax, imean, idev: float(imin) < config.CLOUD_THRESHHOLD,
-                    lambda imin, imax, imean, idev: float(imean) < config.CLOUD_THRESHHOLD or float(idev) > config.CLOUD_SENSITIVITY
+                    lambda imin, imax, imean, idev: (
+                        float(imean) < config.CLOUD_THRESHHOLD or
+                        float(idev) > config.CLOUD_SENSITIVITY
+                    )
                 ])
         else:
             logger.info("Skipping cloud removal")
@@ -355,15 +364,19 @@ def main():
 
         logger.info("Writing csv file")
         rejects = sorted(rejects, key=lambda k: k['#filename'])
-        write_rejects(path.join("{0}_tiles".format(config.SCENE_NAME), "rejected", "rejected.csv"), rejects)
+        write_rejects(
+            path.join("{0}_tiles".format(config.SCENE_NAME), "rejected", "rejected.csv"),
+            rejects)
 
     if config.BUILD_MANIFEST:
         logger.info("Writing manifest")
-        write_manifest(path.join("{0}_tiles".format(config.SCENE_NAME), "accepted", "manifest.csv"), accepts)
+        write_manifest(
+            path.join("{0}_tiles".format(config.SCENE_NAME), "accepted", "manifest.csv"),
+            accepts)
 
     maybe_clean_scratch(config)
 
     logger.info("Processing finished")
 
-if __name__  ==  "__main__":
+if __name__ == "__main__":
     main()

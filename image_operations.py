@@ -2,14 +2,6 @@ import logging
 from os import path
 from subprocess import check_output, call
 
-# def get_dimensions(file):
-#     with Image(filename=file) as img:
-#         return [img.width, img.height]
-#
-# def get_height(file):
-#     with Image(filename=file) as img:
-#         return img.height
-
 def get_dimensions(a_file):
     result = check_output([
         "convert",
@@ -55,7 +47,11 @@ def generate_rectangles(tiles, width, grid_size):
         col = idx % per_row
 
         rects.append("-draw")
-        rects.append("rectangle " + str(grid_size*col) + "," + str(grid_size*row)  + "  " + str(grid_size*(col+1)) + "," + str(grid_size*(row+1)))
+        rects.append("rectangle " +
+                     str(grid_size*col) + "," +
+                     str(grid_size*row)  + "  " +
+                     str(grid_size*(col+1)) + "," +
+                     str(grid_size*(row+1)))
 
     return rects
 
@@ -90,7 +86,7 @@ def prepare_land_mask(config):
         config.MASK_BLUR,
         "-crop",
         str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
-        path.join(config.SCRATCH_PATH,"land","tile_%04d.png")
+        path.join(config.SCRATCH_PATH, "land", "tile_%04d.png")
     ])
 
 def prepare_cloud_mask(config):
@@ -102,7 +98,7 @@ def prepare_cloud_mask(config):
         config.MASK_BLUR,
         "-crop",
         str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
-        path.join(config.SCRATCH_PATH,"cloud","tile_%04d.png")
+        path.join(config.SCRATCH_PATH, "cloud", "tile_%04d.png")
     ])
 
 def get_image_statistics(image):
@@ -115,9 +111,9 @@ def get_image_statistics(image):
         "info:"
     ]).strip('"').split(" ")
 
-def draw_visualization(land, clouds, water, input):
+def draw_visualization(land, clouds, water, input_file):
     args = \
-        ["convert", "-quiet", input, "-strokewidth", "0"] \
+        ["convert", "-quiet", input_file, "-strokewidth", "0"] \
         + ["-fill", "rgba(0,255,0,0.5)"] \
         + land \
         + ["-fill", "rgba(255,255,255,0.5)"] \
@@ -204,7 +200,7 @@ def assemble_image(red, green, blue, config):
         "colorspace",
         "RGB",
         "-combine",
-        path.join(config.SCRATCH_PATH,"render.tif")
+        path.join(config.SCRATCH_PATH, "render.tif")
     ]
 
     logger.info("Compositing red, green, and blue images")
@@ -214,8 +210,8 @@ def prepare_tiles(config):
     call([
         "convert",
         "-quiet",
-        path.join(config.SCRATCH_PATH,"render.tif"),
+        path.join(config.SCRATCH_PATH, "render.tif"),
         "-crop",
         str(config.GRID_SIZE)+"x"+str(config.GRID_SIZE),
-        path.join(config.SCRATCH_PATH,"scene","tile_%04d.png")
+        path.join(config.SCRATCH_PATH, "scene", "tile_%04d.png")
     ])

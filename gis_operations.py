@@ -2,8 +2,8 @@ from __future__ import division
 from pyproj import Proj
 
 def compute_lat_lon(x, y, utm_zone):
-    p = Proj(proj='utm',zone=utm_zone,ellps='WGS84')
-    lat, lon = p(x,y,inverse=True)
+    p = Proj(proj='utm', zone=utm_zone, ellps='WGS84')
+    lat, lon = p(x, y, inverse=True)
     return [lat, lon]
 
 def compute_tile_coords(row, col, width, height, config):
