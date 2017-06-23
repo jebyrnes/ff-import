@@ -17,6 +17,8 @@ logging.basicConfig(
     format='[ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s'
 )
 
+LANDSAT = {'red': 'band3', 'green': 'band4', 'blue': 'band1'}
+LANDSAT8 = {'red': 'band4', 'green': 'band5', 'blue': 'band2'}
 
 def usage():
     print """
@@ -137,9 +139,6 @@ def parse_options():
 
     config.SCENE_NAME = find_scene_name(config)
     config.NEW_MASK = path.join(config.SCENE_DIR, config.SCENE_NAME + "_pixel_qa.tif")
-    config.RED_CHANNEL = path.join(config.SCENE_DIR, config.SCENE_NAME + "_sr_band3.tif")
-    config.GREEN_CHANNEL = path.join(config.SCENE_DIR, config.SCENE_NAME + "_sr_band4.tif")
-    config.BLUE_CHANNEL = path.join(config.SCENE_DIR, config.SCENE_NAME + "_sr_band1.tif")
     config.METADATA_SRC = path.join(config.SCENE_DIR, config.SCENE_NAME + ".xml")
     config.INPUT_FILE = config.NEW_MASK
 
@@ -252,9 +251,18 @@ def main():
     if config.REBUILD or not scratch_exists(config):
         build_scratch(config)
 
-    if config.BUILD_MANIFEST:
-        metadata = parse_metadata(config.SCENE_DIR, config.METADATA_SRC)
-        config.METADATA = metadata
+    config.SATELLITE = LANDSAT
+    metadata = parse_metadata(config.SCENE_DIR, config.METADATA_SRC)
+    config.METADATA = metadata
+    if config.METADATA['spacecraft'] == 'LANDSAT_8':
+        config.SATELLITE = LANDSAT8
+
+    config.RED_CHANNEL = path.join(
+        config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['red'] + ".tif")
+    config.GREEN_CHANNEL = path.join(
+        config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['green'] + ".tif")
+    config.BLUE_CHANNEL = path.join(
+        config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['blue'] + ".tif")
 
     if config.DO_LUT:
         logger.info("Building water mask")
@@ -270,18 +278,21 @@ def main():
 
     if config.REMOVE_NEGATIVE:
         logger.info("Processing source data to remove negative pixels")
-        # for suffix in ["band3.tif", "band4.tif", "band1.tif"]:
-        for suffix in ["band4.tif", "band5.tif", "band2.tif"]:
-            filename = config.SCENE_NAME + "_sr_" + suffix
+        for suffix in [
+                config.SATELLITE['red'],
+                config.SATELLITE['green'],
+                config.SATELLITE['blue']]:
+            filename = config.SCENE_NAME + "_sr_" + suffix + ".tif"
             logger.info("Processing image " + filename)
             img.clamp_image(
                 path.join(config.SCENE_DIR, filename),
                 path.join(config.SCRATCH_PATH, suffix),
                 config
             )
-        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "band4.png")
-        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "band5.png")
-        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "band2.png")
+
+        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['red'] + ".png")
+        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['green'] + ".png")
+        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['blue'] + ".png")
 
     if config.ASSEMBLE_IMAGE:
         img.assemble_image(

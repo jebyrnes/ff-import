@@ -154,7 +154,7 @@ def clamp_image(source, dest, config):
         "1x1%",
         "-depth",
         "8",
-        path.splitext(dest)[0] + '.png'
+        dest + '.png'
     ]
 
     call(convert_args)
