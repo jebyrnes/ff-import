@@ -87,6 +87,7 @@ def parse_options():
             config.REMOVE_CLOUDS = True
             config.REJECT_TILES = True
             config.BUILD_MANIFEST = True
+            config.VISUALIZE_SORT = True
 
         elif arg == "--remove-negative":
             config.REMOVE_NEGATIVE = True
@@ -319,6 +320,9 @@ def main():
 
     if config.REJECT_TILES or config.VISUALIZE_SORT:
 
+        logger.info("Building scene tile output directory")
+        build_output(config.SCENE_NAME)
+
         retained_tiles = get_files_by_extension(path.join(config.SCRATCH_PATH, "land"), "png")
 
         if config.REMOVE_LAND:
@@ -354,12 +358,9 @@ def main():
         land = img.generate_rectangles(no_water, config.width, config.GRID_SIZE)
         clouds = img.generate_rectangles(too_cloudy, config.width, config.GRID_SIZE)
         water = img.generate_rectangles(retained_tiles, config.width, config.GRID_SIZE)
-        img.draw_visualization(land, clouds, water, config.INPUT_FILE)
+        img.draw_visualization(land, clouds, water, config)
 
     if config.REJECT_TILES:
-        logger.info("Building scene tile output directory")
-        build_output(config.SCENE_NAME)
-
         logger.info("Copying accepted tiles")
         for filename in retained_tiles:
             accept_tile(filename, config)

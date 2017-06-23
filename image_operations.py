@@ -115,9 +115,9 @@ def get_image_statistics(image):
         "info:"
     ]).strip('"').split(" ")
 
-def draw_visualization(land, clouds, water, input_file):
+def draw_visualization(land, clouds, water, config):
     args = \
-        ["convert", "-quiet", input_file, "-strokewidth", "0"] \
+        ["convert", "-quiet", config.INPUT_FILE, "-strokewidth", "0"] \
         + ["-fill", "rgba(0,255,0,0.5)"] \
         + land \
         + ["-fill", "rgba(255,255,255,0.5)"] \
@@ -125,7 +125,7 @@ def draw_visualization(land, clouds, water, input_file):
         + ["-fill", "rgba(0,0,255,0.5)"] \
         + water \
         + ["-alpha", "remove"] \
-        + ["-resize", "1000x1000", "output.png"]
+        + ["-resize", "1000x1000", config.SCENE_NAME + "_tiles/output.png"]
 
     call(args)
 
