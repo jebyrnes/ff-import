@@ -131,39 +131,71 @@ def draw_visualization(land, clouds, water, config):
 
 def clamp_image(source, dest, config):
     logger = logging.getLogger(config.SCENE_NAME)
-    plm_args = [
-        "./plm",
-        "0,0,50,100,50,0,100,0",
-        source,
-        path.join(config.SCRATCH_PATH, "clamp.png")
-    ]
+
+    band = dest.split("/")[1]
+    lut = "clamp_lut_linear.pgm" if band != config.SATELLITE['blue'] else "clamp_lut_nonlinear.pgm"
 
     logger.info("Flattening negative values to zero")
-    call(plm_args)
-
-    logger.info("Adjusting brightness")
-    convert_args = [
+    new_args = [
         "convert",
         "-quiet",
         "-type",
         "GrayScale",
-        "-alpha",
-        "remove",
-        path.join(config.SCRATCH_PATH, "clamp.png"),
-        "-contrast-stretch",
-        "1x1%",
+        "-clut",
+        source,
+        lut,
         "-depth",
         "8",
+        "-clamp",
+        path.join(config.SCRATCH_PATH, "snow_mask.png"),
+        "-compose",
+        "lighten",
+        "-composite",
+        path.join(config.SCRATCH_PATH, "cloud_mask.png"),
+        "-compose",
+        "lighten",
+        "-composite",
         dest + '.png'
     ]
-
-    call(convert_args)
+    call(new_args)
 
 def assemble_image(red, green, blue, config):
     logger = logging.getLogger(config.SCENE_NAME)
+
+    logger.info("Generating simplified land/water masks")
+
+    water_mask_args = [
+        "convert",
+        "-quiet",
+        "-type",
+        "GrayScale",
+        config.WATER_MASK,
+        "-blur",
+        "5x2",
+        "-white-threshold",
+        "254",
+        "-blur",
+        "20x2",
+        "-threshold",
+        "254",
+        path.join(config.SCRATCH_PATH, "water.png")
+    ]
+
+    land_mask_args = [
+        "convert",
+        "-quiet",
+        "-type",
+        "GrayScale",
+        path.join(config.SCRATCH_PATH, "water.png"),
+        "-negate",
+        path.join(config.SCRATCH_PATH, "land.png")
+    ]
+    call(water_mask_args)
+    call(land_mask_args)
+
     boost_args = [
         "./plm",
-        "0,0,8,8,8,14,13,23,13,13,100,100",
+        "0,0,10,0,11,21,60,70,66,66,100,100",
         green,
         path.join(config.SCRATCH_PATH, "boost.png")
     ]
@@ -171,43 +203,49 @@ def assemble_image(red, green, blue, config):
     logger.info("Generating boosted green channel")
     call(boost_args)
 
-    adjust_args = [
+    mask_boost_args = [
         "convert",
         "-quiet",
         "-type",
         "GrayScale",
-        config.WATER_MASK,
-        "-blur",
-        config.MASK_BLUR,
-        config.WATER_MASK,
-        "-compose",
-        "darken",
-        "-composite",
         path.join(config.SCRATCH_PATH, "boost.png"),
+        path.join(config.SCRATCH_PATH, "water.png"),
         "-compose",
         "darken",
         "-composite",
-        green,
-        "-compose",
-        "lighten",
-        "-composite",
-        path.join(config.SCRATCH_PATH, "adjust.png")
+        path.join(config.SCRATCH_PATH, "masked.png")
     ]
+    logger.info("Masking boosted green channel")
+    call(mask_boost_args)
 
-    logger.info("Adjusting boosted green channel")
-    call(adjust_args)
-
+    build_green_args = [
+        "convert",
+        "-quiet",
+        "-type",
+        "GrayScale",
+        green,
+        path.join(config.SCRATCH_PATH, "land.png"),
+        "-compose",
+        "darken",
+        "-composite",
+        path.join(config.SCRATCH_PATH, "masked.png"),
+        "-compose",
+        "add",
+        "-composite",
+        path.join(config.SCRATCH_PATH, "green_final.png")
+    ]
+    logger.info("Building final green channel")
+    call(build_green_args)
 
     assemble_args = [
         "convert",
         "-quiet",
         red,
-        path.join(config.SCRATCH_PATH, "adjust.png"),
-        # green,
+        path.join(config.SCRATCH_PATH, "green_final.png"),
         blue,
         "-set",
         "colorspace",
-        "RGB",
+        "sRGB",
         "-depth",
         "8",
         "-combine",

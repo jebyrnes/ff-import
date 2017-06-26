@@ -77,7 +77,7 @@ def parse_options():
             () #noqa
 
         elif arg == "--full":
-            config.WITHTEMPDIR = True
+            # config.WITHTEMPDIR = True
             config.REBUILD = True
             config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
