@@ -325,6 +325,18 @@ def main():
 
         retained_tiles = get_files_by_extension(path.join(config.SCRATCH_PATH, "land"), "png")
 
+        if config.REMOVE_CLOUDS:
+            retained_tiles = apply_rules(
+                retained_tiles, too_cloudy, "cloud", [
+                    lambda imin, imax, imean, idev: float(imin) < config.CLOUD_THRESHHOLD,
+                    lambda imin, imax, imean, idev: (
+                        float(imean) < config.CLOUD_THRESHHOLD or
+                        float(idev) > config.CLOUD_SENSITIVITY
+                    )
+                ])
+        else:
+            logger.info("Skipping cloud removal")
+            
         if config.REMOVE_LAND:
             retained_tiles = apply_rules(
                 retained_tiles, no_water, "land", [
@@ -337,17 +349,6 @@ def main():
         else:
             logger.info("Skipping land removal")
 
-        if config.REMOVE_CLOUDS:
-            retained_tiles = apply_rules(
-                retained_tiles, too_cloudy, "cloud", [
-                    lambda imin, imax, imean, idev: float(imin) < config.CLOUD_THRESHHOLD,
-                    lambda imin, imax, imean, idev: (
-                        float(imean) < config.CLOUD_THRESHHOLD or
-                        float(idev) > config.CLOUD_SENSITIVITY
-                    )
-                ])
-        else:
-            logger.info("Skipping cloud removal")
 
     if config.VISUALIZE_SORT:
         logger.info(str(len(retained_tiles))+" tiles retained")
