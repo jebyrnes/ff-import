@@ -125,25 +125,38 @@ def draw_visualization(land, clouds, water, config):
         + ["-fill", "rgba(0,0,255,0.5)"] \
         + water \
         + ["-alpha", "remove"] \
-        + ["-resize", "1000x1000", config.SCENE_NAME + "_tiles/output.png"]
+        + ["-resize", "1000x1000", config.SCENE_NAME + "_tiles/visualize.png"]
 
     call(args)
 
-def clamp_image(source, dest, config):
+def clamp_image(source, dest, config, brighten):
     logger = logging.getLogger(config.SCENE_NAME)
+    logger.info("Clamping file %s", path.basename(source))
+    target = path.join(config.SCRATCH_PATH, dest  + ".png")
+    _clamp_image(source, target, config, False, brighten)
 
-    band = dest.split("/")[1]
-    lut = "clamp_lut_linear.pgm" if band != config.SATELLITE['blue'] else "clamp_lut_nonlinear.pgm"
+def boost_image(source, config):
+    logger = logging.getLogger(config.SCENE_NAME)
+    logger.info("Boosting file %s", path.basename(source))
+    _clamp_image(source, path.join(config.SCRATCH_PATH, "boost.png"), config, True, False)
 
-    logger.info("Flattening negative values to zero")
+def _clamp_image(source, dest, config, boost, brighten):
+    lut = ("clamp_lut.pgm" if boost else "boost_lut.pgm")
+
     new_args = [
         "convert",
         "-quiet",
         "-type",
         "GrayScale",
+        "-depth",
+        "16",
         "-clut",
         source,
         lut,
+        "-dither",
+        "None",
+        "-colors",
+        "256",
         "-depth",
         "8",
         "-clamp",
@@ -155,12 +168,19 @@ def clamp_image(source, dest, config):
         "-compose",
         "lighten",
         "-composite",
-        dest + '.png'
     ]
+
+    if brighten:
+        new_args.extend(["-brightness-contrast", "10"])
+    new_args.extend([dest])
     call(new_args)
 
-def assemble_image(red, green, blue, config):
+def assemble_image(config):
     logger = logging.getLogger(config.SCENE_NAME)
+
+    red = config.RED_CHANNEL
+    green = config.GREEN_CHANNEL
+    blue = config.BLUE_CHANNEL
 
     logger.info("Generating simplified land/water masks")
 
@@ -193,22 +213,12 @@ def assemble_image(red, green, blue, config):
     call(water_mask_args)
     call(land_mask_args)
 
-    boost_args = [
-        "./plm",
-        "0,0,10,0,11,21,60,70,66,66,100,100",
-        green,
-        path.join(config.SCRATCH_PATH, "boost.png")
-    ]
-
-    logger.info("Generating boosted green channel")
-    call(boost_args)
-
     mask_boost_args = [
         "convert",
         "-quiet",
         "-type",
         "GrayScale",
-        path.join(config.SCRATCH_PATH, "boost.png"),
+        config.INFRARED_CHANNEL,
         path.join(config.SCRATCH_PATH, "water.png"),
         "-compose",
         "darken",
@@ -254,6 +264,11 @@ def assemble_image(red, green, blue, config):
 
     logger.info("Compositing red, green, and blue images")
     call(assemble_args)
+    call([
+        "cp",
+        path.join(config.SCRATCH_PATH, "render.png"),
+        config.SCENE_NAME + "_tiles/render.png"
+    ])
 
 def prepare_tiles(config):
     call([

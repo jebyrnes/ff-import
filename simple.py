@@ -17,8 +17,8 @@ logging.basicConfig(
     format='[ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s'
 )
 
-LANDSAT = {'red': 'band3', 'green': 'band4', 'blue': 'band1'}
-LANDSAT8 = {'red': 'band4', 'green': 'band5', 'blue': 'band2'}
+LANDSAT = {'red': 'band3', 'green': 'band2', 'blue': 'band1', 'infrared': 'band4'}
+LANDSAT8 = {'red': 'band4', 'green': 'band3', 'blue': 'band2', 'infrared': 'band5'}
 
 def usage():
     print """
@@ -39,9 +39,6 @@ channel to aid in kelp-spotting.
     --generate              Perform all scene tile generation tasks
     --assemble              Perform color adjustment and build color output
     --generate-tiles        Build color tiles of scene
-
-    --remove-negative       Remove negative pixels from data that happens
-                            to contain 16-bit signed values
 
     --sort-tiles            Perform all tile sorting tasks
     --generate-mask         Regenerate mask tiles
@@ -79,7 +76,6 @@ def parse_options():
         elif arg == "--full":
             config.WITHTEMPDIR = True
             config.REBUILD = True
-            config.REMOVE_NEGATIVE = True
             config.ASSEMBLE_IMAGE = True
             config.SLICE_IMAGE = True
             config.GENERATE_MASK_TILES = True
@@ -89,8 +85,6 @@ def parse_options():
             config.BUILD_MANIFEST = True
             config.VISUALIZE_SORT = True
 
-        elif arg == "--remove-negative":
-            config.REMOVE_NEGATIVE = True
         elif arg == "--assemble":
             config.ASSEMBLE_IMAGE = True
         elif arg == "--generate-tiles":
@@ -135,8 +129,6 @@ def parse_options():
             config.CLOUD_SENSITIVITY = int(arg.split("=")[1])
         else:
             config.SCENE_DIR = arg
-
-    config.DO_LUT = True
 
     config.SCENE_NAME = find_scene_name(config)
     config.NEW_MASK = path.join(config.SCENE_DIR, config.SCENE_NAME + "_pixel_qa.tif")
@@ -222,9 +214,7 @@ def main():
          not config.VISUALIZE_SORT and
          not config.ASSEMBLE_IMAGE and
          not config.SLICE_IMAGE and
-         not config.REMOVE_NEGATIVE and
          not config.BUILD_MANIFEST and
-         not config.DO_LUT and
          not config.REBUILD):
         usage()
         return
@@ -233,7 +223,6 @@ def main():
          config.REJECT_TILES or
          config.VISUALIZE_SORT or
          config.ASSEMBLE_IMAGE or
-         config.REMOVE_NEGATIVE or
          config.BUILD_MANIFEST or
          config.SLICE_IMAGE) and
             config.SCENE_DIR == ''):
@@ -252,6 +241,9 @@ def main():
     if config.REBUILD or not scratch_exists(config):
         build_scratch(config)
 
+    logger.info("Building scene tile output directory")
+    build_output(config.SCENE_NAME)
+
     config.SATELLITE = LANDSAT
     metadata = parse_metadata(config.SCENE_DIR, config.METADATA_SRC)
     config.METADATA = metadata
@@ -264,43 +256,33 @@ def main():
         config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['green'] + ".tif")
     config.BLUE_CHANNEL = path.join(
         config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['blue'] + ".tif")
+    config.INFRARED_CHANNEL = path.join(
+        config.SCENE_DIR, config.SCENE_NAME + "_sr_" + config.SATELLITE['infrared'] + ".tif")
 
-    if config.DO_LUT:
-        logger.info("Building water mask")
-        config.WATER_MASK = path.join(config.SCRATCH_PATH, "water_mask.png")
-        img.build_mask_files(config, "water_lut.pgm", config.WATER_MASK)
-        logger.info("Building cloud mask")
-        config.CLOUD_MASK = path.join(config.SCRATCH_PATH, "cloud_mask.png")
-        img.build_mask_files(config, "cloud_lut.pgm", config.CLOUD_MASK)
-        logger.info("Building snow mask")
-        config.SNOW_MASK = path.join(config.SCRATCH_PATH, "snow_mask.png")
-        img.build_mask_files(config, "snow_lut.pgm", config.SNOW_MASK)
-        config.INPUT_FILE = config.WATER_MASK
-
-    if config.REMOVE_NEGATIVE:
-        logger.info("Processing source data to remove negative pixels")
-        for suffix in [
-                config.SATELLITE['red'],
-                config.SATELLITE['green'],
-                config.SATELLITE['blue']]:
-            filename = config.SCENE_NAME + "_sr_" + suffix + ".tif"
-            logger.info("Processing image " + filename)
-            img.clamp_image(
-                path.join(config.SCENE_DIR, filename),
-                path.join(config.SCRATCH_PATH, suffix),
-                config
-            )
-
-        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['red'] + ".png")
-        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['green'] + ".png")
-        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, config.SATELLITE['blue'] + ".png")
+    logger.info("Building water mask")
+    config.WATER_MASK = path.join(config.SCRATCH_PATH, "water_mask.png")
+    img.build_mask_files(config, "water_lut.pgm", config.WATER_MASK)
+    logger.info("Building cloud mask")
+    config.CLOUD_MASK = path.join(config.SCRATCH_PATH, "cloud_mask.png")
+    img.build_mask_files(config, "cloud_lut.pgm", config.CLOUD_MASK)
+    logger.info("Building snow mask")
+    config.SNOW_MASK = path.join(config.SCRATCH_PATH, "snow_mask.png")
+    img.build_mask_files(config, "snow_lut.pgm", config.SNOW_MASK)
+    config.INPUT_FILE = config.WATER_MASK
 
     if config.ASSEMBLE_IMAGE:
-        img.assemble_image(
-            path.join(config.RED_CHANNEL),
-            path.join(config.GREEN_CHANNEL),
-            path.join(config.BLUE_CHANNEL),
-            config)
+        logger.info("Processing source data to remove negative pixels")
+        clamp = img.clamp_image
+        boost = img.boost_image
+        clamp(config.RED_CHANNEL, "red", config, False)
+        clamp(config.INFRARED_CHANNEL, "green", config, False)
+        clamp(config.BLUE_CHANNEL, "blue", config, True)
+        boost(config.INFRARED_CHANNEL, config)
+        config.RED_CHANNEL = path.join(config.SCRATCH_PATH, "red.png")
+        config.GREEN_CHANNEL = path.join(config.SCRATCH_PATH, "green.png")
+        config.BLUE_CHANNEL = path.join(config.SCRATCH_PATH, "blue.png")
+        config.INFRARED_CHANNEL = path.join(config.SCRATCH_PATH, "boost.png")
+        img.assemble_image(config)
     else:
         logger.info("Skipping scene generation")
 
@@ -320,9 +302,6 @@ def main():
 
     if config.REJECT_TILES or config.VISUALIZE_SORT:
 
-        logger.info("Building scene tile output directory")
-        build_output(config.SCENE_NAME)
-
         retained_tiles = get_files_by_extension(path.join(config.SCRATCH_PATH, "land"), "png")
 
         if config.REMOVE_CLOUDS:
@@ -336,7 +315,7 @@ def main():
                 ])
         else:
             logger.info("Skipping cloud removal")
-            
+
         if config.REMOVE_LAND:
             retained_tiles = apply_rules(
                 retained_tiles, no_water, "land", [
@@ -355,7 +334,7 @@ def main():
         logger.info(str(len(no_water))+" tiles without water rejected")
         logger.info(str(len(too_cloudy))+" tiles rejected for clouds")
 
-        logger.info("Generating tile visualization (output.png)")
+        logger.info("Generating tile visualization")
         land = img.generate_rectangles(no_water, config.width, config.GRID_SIZE)
         clouds = img.generate_rectangles(too_cloudy, config.width, config.GRID_SIZE)
         water = img.generate_rectangles(retained_tiles, config.width, config.GRID_SIZE)
