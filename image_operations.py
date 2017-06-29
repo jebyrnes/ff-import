@@ -164,10 +164,6 @@ def _clamp_image(source, dest, config, boost, brighten):
         "-compose",
         "lighten",
         "-composite",
-        path.join(config.SCRATCH_PATH, "cloud_mask.png"),
-        "-compose",
-        "lighten",
-        "-composite",
     ]
 
     if brighten:
