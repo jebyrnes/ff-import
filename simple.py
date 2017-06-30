@@ -17,8 +17,8 @@ logging.basicConfig(
     format='[ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s'
 )
 
-LANDSAT = {'red': 'band3', 'green': 'band2', 'blue': 'band1', 'infrared': 'band4'}
-LANDSAT8 = {'red': 'band4', 'green': 'band3', 'blue': 'band2', 'infrared': 'band5'}
+LANDSAT = {'red': 'band5', 'green': 'band2', 'blue': 'band3', 'infrared': 'band4'}
+LANDSAT8 = {'red': 'band6', 'green': 'band3', 'blue': 'band4', 'infrared': 'band5'}
 
 def usage():
     print """
