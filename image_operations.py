@@ -13,7 +13,7 @@ def get_dimensions(a_file):
         "info:"
     ]).split(' ')
 
-    return [int(result[0]), int(result[1])]
+    return [int(result[0].strip()), int(result[1].strip())]
 
 def get_height(a_file):
     return int(check_output([
@@ -24,7 +24,7 @@ def get_height(a_file):
         "-format",
         '%[fx:h]',
         "info:"
-    ]))
+    ]).strip())
 
 def get_width(a_file):
     return int(check_output([
@@ -35,7 +35,7 @@ def get_width(a_file):
         "-format",
         '%[fx:w]',
         "info:"
-    ]))
+    ]).strip())
 
 def generate_rectangles(tiles, width, grid_size):
     rects = []
@@ -106,14 +106,14 @@ def prepare_cloud_mask(config):
     ])
 
 def get_image_statistics(image):
-    return check_output([
+    return [elem.strip() for elem in check_output([
         "convert",
         "-quiet",
         image,
         "-format",
         "\"%[fx:100*minima] %[fx:100*maxima] %[fx:100*mean] %[fx:100*standard_deviation]\"",
         "info:"
-    ]).strip('"').split(" ")
+    ]).strip('"').split(" ")]
 
 def draw_visualization(land, clouds, water, config):
     args = \
