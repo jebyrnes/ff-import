@@ -14,7 +14,7 @@ from xml_operations import parse_metadata
 from config import config
 
 logging.basicConfig(
-    format='[ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s'
+    format='[%(hostname)s ff-import %(name)s] %(levelname)s %(asctime)-15s %(message)s'
 )
 
 LANDSAT = {'red': 'band5', 'green': 'band2', 'blue': 'band3', 'infrared': 'band4'}
