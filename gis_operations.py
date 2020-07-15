@@ -2,7 +2,7 @@ from __future__ import division
 from pyproj import Proj
 
 def compute_lat_lon(x, y, utm_zone):
-    p = Proj(proj='utm', zone=utm_zone, ellps='WGS84')
+    p = Proj(proj='utm', zone=str(abs(int(utm_zone))), ellps='WGS84')
     lat, lon = p(x, y, inverse=True)
     return [lat, lon]
 
@@ -19,6 +19,10 @@ def compute_tile_coords(row, col, width, height, config):
     top = scene_top + ((row * config.GRID_SIZE) / config.height) * scene_span_y
     right = left + (width / config.width) * scene_span_x
     bottom = top + (height / config.height) * scene_span_y
+    
+    if int(config.METADATA['#utm_zone']) < 0:
+        top = top - 10000000
+        bottom = bottom - 10000000
 
     return [left, top, right, bottom]
 

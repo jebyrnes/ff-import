@@ -198,6 +198,9 @@ def build_dict_for_csv(filename, reason, config):
 
     my_dict.update(coordinate_metadata)
     my_dict.update(config.METADATA)
+    
+    my_dict['#utm_zone'] = str(abs(int(my_dict['#utm_zone'])))
+    
     return my_dict
 
 
